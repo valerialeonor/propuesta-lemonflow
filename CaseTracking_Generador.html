@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CaseTracking — Generador de Propuestas</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --negro: #1a1a1a;
+    --naranja: #E8610A;
+    --naranja-vib: #FF7A1A;
+    --naranja-clr: #FFF0E6;
+    --naranja-txt: #7A2E00;
+    --gris-bg: #FFF8F4;
+    --gris-txt: #6b7280;
+    --borde: #fcd5b3;
+    --blanco: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #1a1a1a; min-height: 100vh; color: #1a1a1a; }
+
+  .topbar { background: linear-gradient(90deg, #E8610A, #FF9A3C); height: 4px; }
+  .navbar {
+    background: #1a1a1a; padding: 14px 32px;
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid rgba(232,97,10,0.3);
+  }
+  .logo-case  { color: #fff;    font-size: 20px; font-weight: 700; }
+  .logo-track { color: #E8610A; font-size: 20px; font-weight: 700; }
+  .logo-by    { color: #888;    font-size: 11px; margin-left: 4px; }
+
+  .main { display: grid; grid-template-columns: 420px 1fr; min-height: calc(100vh - 56px); }
+
+  /* PANEL */
+  .panel {
+    background: #111; border-right: 1px solid rgba(232,97,10,0.2);
+    padding: 28px 24px 40px; overflow-y: auto;
+  }
+  .panel-title { font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #E8610A; margin-bottom: 20px; }
+  .section-block { margin-bottom: 22px; }
+  .section-label {
+    font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+    color: #E8610A; margin-bottom: 10px; padding-bottom: 5px;
+    border-bottom: 1px solid rgba(232,97,10,0.2);
+  }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .field-row.full { grid-template-columns: 1fr; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  label { font-size: 10.5px; color: #E8610A; font-weight: 500; letter-spacing: .03em; }
+  input, select {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(232,97,10,0.3);
+    border-radius: 7px; padding: 8px 11px; font-size: 12.5px;
+    font-family: 'DM Sans', sans-serif; color: #fcd5b3; outline: none; transition: border-color .2s; width: 100%;
+  }
+  input:focus, select:focus { border-color: #E8610A; background: rgba(232,97,10,0.08); }
+  input::placeholder { color: rgba(232,97,10,0.3); }
+  select option { background: #1a1a1a; color: #fcd5b3; }
+
+  .prod-row { display: grid; grid-template-columns: 2fr 2fr 1.5fr 1.5fr; gap: 8px; margin-bottom: 8px; }
+
+  .btn-gen {
+    width: 100%; margin-top: 24px; padding: 13px;
+    background: linear-gradient(135deg, #E8610A, #FF7A1A);
+    color: #fff; border: none; border-radius: 10px;
+    font-size: 13.5px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; letter-spacing: .03em; transition: opacity .2s, transform .1s;
+  }
+  .btn-gen:hover { opacity: .9; }
+  .btn-gen:active { transform: scale(.98); }
+
+  /* PREVIEW */
+  .preview-area {
+    background: #f5ede6; display: flex; flex-direction: column;
+    align-items: center; padding: 32px 24px; overflow-y: auto;
+  }
+  .preview-title {
+    font-size: 11px; font-weight: 600; letter-spacing: .12em;
+    text-transform: uppercase; color: #E8610A; margin-bottom: 20px; align-self: flex-start;
+  }
+
+  /* PROPUESTA */
+  .propuesta {
+    background: #fff; width: 100%; max-width: 680px;
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 8px 40px rgba(232,97,10,.18);
+  }
+
+  .prop-header { background: #1a1a1a; }
+  .prop-topbar { background: linear-gradient(90deg, #E8610A, #FF9A3C); height: 5px; }
+  .prop-header-inner {
+    padding: 18px 22px 12px; display: flex;
+    justify-content: space-between; align-items: flex-start;
+  }
+  .prop-logo-case  { color: #fff;    font-size: 20px; font-weight: 700; }
+  .prop-logo-track { color: #E8610A; font-size: 20px; font-weight: 700; }
+  .prop-logo-by    { color: #888; font-size: 10px; display: block; margin-top: 2px; }
+  .prop-header-right { text-align: right; font-size: 10px; color: #888; line-height: 1.9; }
+  .prop-header-right .h { color: #fcd5b3; }
+  .prop-header-right .l { color: #E8610A; }
+
+  .prop-subheader {
+    background: #E8610A; padding: 7px 22px; display: flex; gap: 0;
+  }
+  .prop-meta { flex: 1; font-size: 9.5px; color: #fff3ec; }
+  .prop-meta b { color: #fff; }
+
+  .prop-body { padding: 18px 22px; background: #fff; }
+  .prop-section { margin-bottom: 16px; }
+  .prop-sec-title {
+    font-size: 11px; font-weight: 700; color: #E8610A;
+    border-left: 3px solid #E8610A; padding-left: 8px; margin-bottom: 8px;
+  }
+
+  .prop-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .prop-field {
+    background: #FFF8F4; border: 0.5px solid #fcd5b3;
+    border-radius: 6px; padding: 6px 10px;
+  }
+  .prop-field .fl { font-size: 8px; color: #E8610A; margin-bottom: 1px; }
+  .prop-field .fv { font-size: 11px; font-weight: 600; color: #1a1a1a; }
+
+  .prop-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  .prop-table thead tr { background: #FFF0E6; }
+  .prop-table thead th {
+    text-align: left; padding: 7px 9px; font-weight: 700;
+    color: #7A2E00; border-bottom: 1px solid #fcd5b3; font-size: 9.5px;
+  }
+  .prop-table tbody td { padding: 7px 9px; color: #1a1a1a; border-bottom: 0.5px solid #fce8d8; }
+  .badge-gratis {
+    background: #EAF3DE; color: #3B6D11; font-size: 8.5px; font-weight: 700;
+    padding: 2px 8px; border-radius: 20px; display: inline-block;
+  }
+
+  .prop-total-row {
+    display: flex; justify-content: flex-end; gap: 8px; margin-top: 7px; flex-direction: column; align-items: flex-end;
+  }
+  .prop-total-box {
+    background: #1a1a1a; color: #fcd5b3; font-size: 11px; font-weight: 700;
+    padding: 6px 16px; border-radius: 7px; min-width: 200px; text-align: right;
+  }
+
+  .prop-cond {
+    background: #FFF0E6; border-left: 3px solid #E8610A;
+    border: 0.5px solid #fcd5b3; border-radius: 6px;
+    padding: 8px 12px; margin-bottom: 6px;
+  }
+  .prop-cond .cl { font-size: 8px; color: #E8610A; margin-bottom: 2px; font-weight: 600; }
+  .prop-cond .cv { font-size: 10px; font-weight: 700; color: #7A2E00; }
+
+  .prop-legal-row {
+    display: flex; gap: 10px; padding: 7px 10px;
+    border-bottom: 0.5px solid #fce8d8; font-size: 9.5px;
+  }
+  .prop-legal-row:nth-child(odd) { background: #FFF8F4; }
+  .prop-legal-num { color: #E8610A; font-weight: 700; min-width: 18px; }
+  .prop-legal-ttl { font-weight: 700; color: #1a1a1a; }
+  .prop-legal-desc { color: #6b7280; margin-top: 1px; font-size: 8.5px; }
+
+  .prop-footer {
+    border-top: 1px solid #fce8d8; padding: 12px 22px;
+    display: flex; justify-content: space-between; align-items: flex-end;
+  }
+  .prop-footer-left { font-size: 9px; color: #E8610A; }
+  .prop-footer-right { text-align: center; font-size: 9px; color: #6b7280; }
+  .firma-line { border-top: 1px solid #6b7280; width: 160px; margin: 0 auto 4px; }
+
+  .btn-dl {
+    margin-top: 16px; padding: 11px 28px; background: #1a1a1a;
+    color: #E8610A; border: 1px solid rgba(232,97,10,0.5); border-radius: 8px;
+    font-size: 12.5px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; letter-spacing: .03em; transition: background .2s;
+  }
+  .btn-dl:hover { background: #2a1a10; }
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<nav class="navbar">
+  <span class="logo-case">Case</span><span class="logo-track">Tracking</span>
+  <span class="logo-by">by LemonTech</span>
+</nav>
+
+<div class="main">
+
+  <!-- FORMULARIO -->
+  <aside class="panel">
+    <div class="panel-title">Generador de propuesta</div>
+
+    <div class="section-block">
+      <div class="section-label">Account Manager</div>
+      <div class="field-row">
+        <div class="field"><label>Nombre</label><input id="am_nombre" value="Rodolfo Chiari" oninput="update()"/></div>
+        <div class="field"><label>Correo</label><input id="am_correo" value="rchiari@lemontech.com" oninput="update()"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Company ID</label><input id="am_compid" value="58295579181" oninput="update()"/></div>
+        <div class="field"><label>Fecha de emisión</label><input id="am_emision" type="date" value="2026-05-05" oninput="update()"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Fecha de vencimiento</label><input id="am_vencimiento" type="date" value="2026-05-30" oninput="update()"/></div>
+      </div>
+    </div>
+
+    <div class="section-block">
+      <div class="section-label">Información del cliente</div>
+      <div class="field-row">
+        <div class="field"><label>Nombre de contacto</label><input id="cl_nombre" value="Carlos Martínez" oninput="update()"/></div>
+        <div class="field"><label>Correo</label><input id="cl_correo" value="carlos.manuel@cmrlex.com" oninput="update()"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Empresa</label><input id="cl_empresa" value="Láragos" oninput="update()"/></div>
+        <div class="field"><label>RUT / Tax ID</label><input id="cl_rut" placeholder="ej. 76.123.456-7" oninput="update()"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Contacto de pagos</label><input id="cl_pagos" placeholder="Nombre" oninput="update()"/></div>
+        <div class="field"><label>Correo pagos</label><input id="cl_correopagos" placeholder="correo@empresa.com" oninput="update()"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Teléfono</label><input id="cl_tel" placeholder="+56 9..." oninput="update()"/></div>
+        <div class="field"><label>Giro / Actividad</label><input id="cl_giro" placeholder="Ej. Jurídico" oninput="update()"/></div>
+      </div>
+      <div class="field-row full">
+        <div class="field"><label>Dirección</label><input id="cl_dir" placeholder="Calle, ciudad, país" oninput="update()"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Inicio suscripción</label><input id="cl_inicio" value="Mayo 2026" oninput="update()"/></div>
+        <div class="field"><label>Fin suscripción</label><input id="cl_fin" value="Abril 2027" oninput="update()"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Modalidad de facturación</label>
+          <select id="cl_modal" onchange="update()">
+            <option value="Anual">Anual</option>
+            <option value="Mensual">Mensual</option>
+            <option value="Semestral">Semestral</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-block">
+      <div class="section-label">Producto</div>
+      <div class="prod-row">
+        <div class="field"><label>Cantidad</label><input id="pr_cant" value="1000 procesos judiciales" oninput="update()"/></div>
+        <div class="field"><label>Producto / Add-on</label><input id="pr_prod" value="CaseTracking Enterprise" oninput="update()"/></div>
+        <div class="field"><label>Valor mensual</label><input id="pr_valor" value="24775" oninput="update()"/></div>
+        <div class="field"><label>Implementación</label><input id="pr_impl" value="Gratis" oninput="update()"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Moneda</label>
+          <select id="pr_moneda" onchange="update()">
+            <option value="MXN">MXN</option>
+            <option value="USD">USD</option>
+            <option value="CLP">CLP</option>
+            <option value="EUR">EUR</option>
+            <option value="COP">COP</option>
+            <option value="PEN">PEN</option>
+          </select>
+        </div>
+        <div class="field"><label>Vencimiento producto</label><input id="pr_venc" type="date" value="2026-05-30" oninput="update()"/></div>
+      </div>
+    </div>
+
+    <div class="section-block">
+      <div class="section-label">Condiciones particulares</div>
+      <div class="field-row full">
+        <div class="field"><label>Detalle condición</label>
+          <input id="cond_det" value="Usuarios ilimitados e implementación y capacitación gratis" oninput="update()"/>
+        </div>
+      </div>
+      <div class="field-row full">
+        <div class="field"><label>Vigencia condición</label>
+          <input id="cond_vig" value="Durante año 2025" oninput="update()"/>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-gen" onclick="update()">↻ Actualizar vista previa</button>
+  </aside>
+
+  <!-- PREVIEW -->
+  <section class="preview-area">
+    <div class="preview-title">Vista previa de la propuesta</div>
+    <div class="propuesta" id="propuesta"></div>
+    <button class="btn-dl" onclick="downloadPDF()">⬇ Descargar PDF</button>
+  </section>
+</div>
+
+<script>
+function v(id){ return document.getElementById(id).value; }
+
+function fmtDate(str){
+  if(!str) return '';
+  const d = new Date(str + 'T00:00:00');
+  if(isNaN(d)) return str;
+  return d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+
+function fmtNum(n){
+  return parseFloat(n||0).toLocaleString('es-CL');
+}
+
+function calcTotal(){
+  return (parseFloat(v('pr_valor')||0)*12).toLocaleString('es-CL');
+}
+
+function update(){
+  const mon = v('pr_moneda');
+  const total = calcTotal();
+  document.getElementById('propuesta').innerHTML = `
+  <div class="prop-header">
+    <div class="prop-topbar"></div>
+    <div class="prop-header-inner">
+      <div>
+        <div><span class="prop-logo-case">Case</span><span class="prop-logo-track">Tracking</span></div>
+        <span class="prop-logo-by">by LemonTech</span>
+      </div>
+      <div class="prop-header-right">
+        <div class="h">Lemontech SpA · Tax ID 99.511.620-0</div>
+        <div>Las Condes, Santiago. Chile.</div>
+        <div class="l">www.lemontech.com</div>
+      </div>
+    </div>
+    <div class="prop-subheader">
+      <div class="prop-meta"><b>Account Manager</b> ${v('am_nombre')}</div>
+      <div class="prop-meta"><b>Correo</b> ${v('am_correo')}</div>
+      <div class="prop-meta"><b>Company ID</b> ${v('am_compid')}</div>
+      <div class="prop-meta"><b>Emisión</b> ${fmtDate(v('am_emision'))}</div>
+      <div class="prop-meta"><b>Vence</b> ${fmtDate(v('am_vencimiento'))}</div>
+    </div>
+  </div>
+
+  <div class="prop-body">
+
+    <div class="prop-section">
+      <div class="prop-sec-title">Información del cliente</div>
+      <div class="prop-fields">
+        <div class="prop-field"><div class="fl">Nombre de contacto</div><div class="fv">${v('cl_nombre')||'—'}</div></div>
+        <div class="prop-field"><div class="fl">Contacto de pagos</div><div class="fv">${v('cl_pagos')||'—'}</div></div>
+        <div class="prop-field"><div class="fl">Correo</div><div class="fv">${v('cl_correo')||'—'}</div></div>
+        <div class="prop-field"><div class="fl">Correo pagos</div><div class="fv">${v('cl_correopagos')||'—'}</div></div>
+        <div class="prop-field"><div class="fl">Empresa</div><div class="fv">${v('cl_empresa')||'—'}</div></div>
+        <div class="prop-field"><div class="fl">Teléfono</div><div class="fv">${v('cl_tel')||'—'}</div></div>
+        <div class="prop-field"><div class="fl">RUT / Tax ID</div><div class="fv">${v('cl_rut')||'—'}</div></div>
+        <div class="prop-field"><div class="fl">Giro / Actividad</div><div class="fv">${v('cl_giro')||'—'}</div></div>
+        <div class="prop-field"><div class="fl">Dirección</div><div class="fv">${v('cl_dir')||'—'}</div></div>
+        <div class="prop-field"><div class="fl">Modalidad de facturación</div><div class="fv">${v('cl_modal')}</div></div>
+        <div class="prop-field"><div class="fl">Inicio suscripción</div><div class="fv">${v('cl_inicio')||'—'}</div></div>
+        <div class="prop-field"><div class="fl">Fin suscripción</div><div class="fv">${v('cl_fin')||'—'}</div></div>
+      </div>
+    </div>
+
+    <div class="prop-section">
+      <div class="prop-sec-title">Productos</div>
+      <table class="prop-table">
+        <thead><tr>
+          <th>Cantidad</th><th>Producto / Add-on</th><th>Valor mensual</th><th>Implementación</th><th>Moneda</th>
+        </tr></thead>
+        <tbody><tr>
+          <td>${v('pr_cant')||'—'}</td>
+          <td>${v('pr_prod')||'—'}</td>
+          <td>${fmtNum(v('pr_valor'))}</td>
+          <td><span class="badge-gratis">${v('pr_impl')||'—'}</span></td>
+          <td>${mon}</td>
+        </tr></tbody>
+      </table>
+      <div class="prop-total-row">
+        <div class="prop-total-box">Valor total anual &nbsp;&nbsp; ${total} ${mon}</div>
+        <div class="prop-total-box" style="background:#E8610A;">Valor mensual &nbsp;&nbsp; ${fmtNum(v('pr_valor'))} ${mon}</div>
+      </div>
+    </div>
+
+    <div class="prop-section">
+      <div class="prop-sec-title">Condiciones particulares</div>
+      <div class="prop-cond">
+        <div class="cl">Detalle condición particular</div>
+        <div class="cv">${v('cond_det')||'—'}</div>
+      </div>
+      <div class="prop-cond" style="margin-top:5px;">
+        <div class="cl">Vigencia condición particular</div>
+        <div class="cv">${v('cond_vig')||'—'}</div>
+      </div>
+    </div>
+
+    <div class="prop-section">
+      <div class="prop-sec-title">Términos y condiciones</div>
+      <div class="prop-legal-row">
+        <div class="prop-legal-num">1.</div>
+        <div><div class="prop-legal-ttl">Aceptación de la propuesta</div>
+        <div class="prop-legal-desc">La suscripción mediante firma de las condiciones comerciales descritas en este documento y la consiguiente emisión de una orden de compra, implican la aceptación del servicio y de los Términos y Condiciones que regulan el uso del mismo.</div></div>
+      </div>
+      <div class="prop-legal-row">
+        <div class="prop-legal-num">2.</div>
+        <div><div class="prop-legal-ttl">Términos y condiciones</div>
+        <div class="prop-legal-desc">recursos.lemontech.com/hubfs/Archivos-legales/ACUERDO-MARCO-DE-SERVICIOS-DE-LEMONTECH.pdf</div></div>
+      </div>
+      <div class="prop-legal-row">
+        <div class="prop-legal-num">3.</div>
+        <div><div class="prop-legal-ttl">Aviso de privacidad</div>
+        <div class="prop-legal-desc">recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf</div></div>
+      </div>
+      <div class="prop-legal-row">
+        <div class="prop-legal-num">4.</div>
+        <div><div class="prop-legal-ttl">Encargo Tratamiento de datos</div>
+        <div class="prop-legal-desc">recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="prop-footer">
+    <div class="prop-footer-left">Lemontech SpA · Tax ID 99.511.620-0</div>
+    <div class="prop-footer-right">
+      <div class="firma-line"></div>
+      Firma Representante
+    </div>
+  </div>
+  `;
+}
+
+function downloadPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const W=210, M=15, U=W-2*M;
+  const mon = v('pr_moneda');
+  const total = calcTotal();
+
+  // Header negro
+  doc.setFillColor(26,26,26);
+  doc.rect(0,0,W,30,'F');
+  doc.setFillColor(232,97,10);
+  doc.rect(0,0,W,2,'F');
+
+  // Logo
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(17); doc.setTextColor(255,255,255);
+  doc.text('Case', M, 15);
+  const cw = doc.getTextWidth('Case');
+  doc.setTextColor(232,97,10);
+  doc.text('Tracking', M+cw, 15);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8); doc.setTextColor(136,136,136);
+  doc.text('by LemonTech', M, 21);
+
+  // Header right
+  doc.setFontSize(8); doc.setTextColor(252,213,179);
+  doc.text('Lemontech SpA  ·  Tax ID 99.511.620-0', W-M, 12, {align:'right'});
+  doc.setTextColor(136,136,136);
+  doc.text('Las Condes, Santiago. Chile.', W-M, 18, {align:'right'});
+  doc.setTextColor(232,97,10);
+  doc.text('www.lemontech.com', W-M, 24, {align:'right'});
+
+  // Subheader naranja
+  doc.setFillColor(232,97,10);
+  doc.rect(0,30,W,10,'F');
+  const metas = [
+    ['Account Manager', v('am_nombre')],
+    ['Correo', v('am_correo')],
+    ['Company ID', v('am_compid')],
+    ['Emisión', fmtDate(v('am_emision'))],
+    ['Vence', fmtDate(v('am_vencimiento'))],
+  ];
+  const colW2 = U / metas.length;
+  metas.forEach(([lbl, val], i) => {
+    const x = M + i*colW2;
+    doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(255,255,255);
+    doc.text(lbl, x, 34.5);
+    doc.setFont('helvetica','normal'); doc.setTextColor(255,243,236);
+    doc.text(val||'', x, 38.5);
+  });
+
+  let y = 48;
+
+  const secTitle = (txt) => {
+    doc.setDrawColor(232,97,10); doc.setLineWidth(0.8);
+    doc.line(M, y, M, y+5);
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(232,97,10);
+    doc.text(txt, M+4, y+4);
+    y += 9;
+  };
+
+  const fieldGrid = (pairs) => {
+    const hw = (U-3)/2;
+    for(let i=0;i<pairs.length;i+=2){
+      const row = pairs.slice(i,i+2);
+      row.forEach((p,j) => {
+        const x = M + j*(hw+3);
+        doc.setFillColor(255,248,244); doc.setDrawColor(252,213,179); doc.setLineWidth(0.3);
+        doc.roundedRect(x, y, hw, 10, 1.5,1.5,'FD');
+        doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(232,97,10);
+        doc.text(p[0], x+3, y+4);
+        doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(26,26,26);
+        doc.text(p[1]||'—', x+3, y+8.5);
+      });
+      y += 12;
+    }
+    y += 2;
+  };
+
+  // Cliente
+  secTitle('Información del cliente');
+  fieldGrid([
+    ['Nombre de contacto', v('cl_nombre')],
+    ['Contacto de pagos', v('cl_pagos')],
+    ['Correo', v('cl_correo')],
+    ['Correo pagos', v('cl_correopagos')],
+    ['Empresa', v('cl_empresa')],
+    ['Teléfono', v('cl_tel')],
+    ['RUT / Tax ID', v('cl_rut')],
+    ['Giro / Actividad', v('cl_giro')],
+    ['Dirección', v('cl_dir')],
+    ['Modalidad de facturación', v('cl_modal')],
+    ['Inicio suscripción', v('cl_inicio')],
+    ['Fin suscripción', v('cl_fin')],
+  ]);
+
+  // Productos
+  secTitle('Productos');
+  const cols = [42,48,28,28,24];
+  const heads = ['Cantidad','Producto / Add-on','Valor mensual','Implementación','Moneda'];
+  doc.setFillColor(255,240,230); doc.setDrawColor(252,213,179); doc.setLineWidth(0.3);
+  doc.rect(M,y,U,8,'FD');
+  let cx=M;
+  heads.forEach((h,i)=>{
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(122,46,0);
+    doc.text(h, cx+2, y+5.5); cx+=cols[i];
+  });
+  y+=8;
+  const pvals=[v('pr_cant'), v('pr_prod'), fmtNum(v('pr_valor')), v('pr_impl'), mon];
+  doc.setFillColor(255,255,255); doc.rect(M,y,U,8,'FD');
+  cx=M;
+  pvals.forEach((val,i)=>{
+    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(26,26,26);
+    doc.text(val||'—', cx+2, y+5.5); cx+=cols[i];
+  });
+  y+=11;
+
+  // Totales
+  doc.setFillColor(26,26,26);
+  doc.roundedRect(W-M-65, y, 65, 8, 2,2,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(252,213,179);
+  doc.text(`Valor total anual: ${total} ${mon}`, W-M-3, y+5.5, {align:'right'});
+  y+=10;
+  doc.setFillColor(232,97,10);
+  doc.roundedRect(W-M-65, y, 65, 8, 2,2,'F');
+  doc.setTextColor(255,255,255);
+  doc.text(`Valor mensual: ${fmtNum(v('pr_valor'))} ${mon}`, W-M-3, y+5.5, {align:'right'});
+  y+=14;
+
+  // Condiciones particulares
+  secTitle('Condiciones particulares');
+  const condItems = [
+    ['Detalle condición particular', v('cond_det')],
+    ['Vigencia condición particular', v('cond_vig')],
+  ];
+  condItems.forEach(([lbl, val]) => {
+    doc.setFillColor(255,240,230); doc.setDrawColor(252,213,179); doc.setLineWidth(0.3);
+    doc.rect(M, y, U, 10, 'FD');
+    doc.setDrawColor(232,97,10); doc.setLineWidth(1.5);
+    doc.line(M, y, M, y+10);
+    doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(232,97,10);
+    doc.text(lbl, M+4, y+4.5);
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(122,46,0);
+    doc.text(val||'—', M+4, y+8.5);
+    y+=12;
+  });
+  y+=3;
+
+  // Términos
+  secTitle('Términos y condiciones');
+  const legales = [
+    ['1.','Aceptación de la propuesta','La suscripción mediante firma implica la aceptación del servicio y Términos y Condiciones.'],
+    ['2.','Términos y condiciones','recursos.lemontech.com/hubfs/Archivos-legales/ACUERDO-MARCO-DE-SERVICIOS-DE-LEMONTECH.pdf'],
+    ['3.','Aviso de privacidad','recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf'],
+    ['4.','Encargo Tratamiento de datos','recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf'],
+  ];
+  legales.forEach(([n,t,d],i)=>{
+    doc.setFillColor(i%2===0?255:255, i%2===0?248:255, i%2===0?244:255);
+    doc.rect(M,y,U,10,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(232,97,10);
+    doc.text(n, M+3, y+4.5);
+    doc.setTextColor(26,26,26);
+    doc.text(t, M+11, y+4.5);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(107,114,128);
+    doc.text(d, M+11, y+8.5);
+    y+=11;
+  });
+
+  y+=6;
+  doc.setDrawColor(252,213,179); doc.setLineWidth(0.4);
+  doc.line(M, y, W-M, y);
+  y+=6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(232,97,10);
+  doc.text('Lemontech SpA  ·  Tax ID 99.511.620-0', M, y+3);
+  doc.setTextColor(107,114,128);
+  doc.line(W-M-55, y+6, W-M, y+6);
+  doc.setFont('helvetica','bold');
+  doc.text('Firma Representante', W-M-27, y+11, {align:'center'});
+
+  doc.save(`CaseTracking_Propuesta_${v('cl_empresa')||'Cliente'}.pdf`);
+}
+
+update();
+</script>
+</body>
+</html>
