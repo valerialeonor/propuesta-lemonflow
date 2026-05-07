@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LemonFlow — Generador de Propuestas</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --negro: #0f0720;
+    --morado: #6B21C8;
+    --morado-vib: #8B2FC9;
+    --morado-sub: #C77DFF;
+    --morado-clr: #f3e8ff;
+    --morado-txt: #4c1d95;
+    --gris-bg: #F8F5FF;
+    --gris-txt: #6b7280;
+    --blanco: #ffffff;
+    --borde: #e5d5fa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #0f0720;
+    min-height: 100vh;
+    color: #1a0a2e;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    background: linear-gradient(90deg, #8B2FC9, #C13584);
+    height: 4px;
+  }
+  .navbar {
+    background: #0f0720;
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid rgba(139,47,201,0.3);
+  }
+  .logo-lemon { color: #C77DFF; font-size: 20px; font-weight: 600; }
+  .logo-flow  { color: #fff;    font-size: 20px; font-weight: 600; }
+  .logo-by    { color: #9B72CF; font-size: 11px; margin-left: 2px; }
+
+  /* LAYOUT */
+  .main {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    min-height: calc(100vh - 56px);
+  }
+
+  /* PANEL IZQUIERDO */
+  .panel {
+    background: #160a28;
+    border-right: 1px solid rgba(139,47,201,0.25);
+    padding: 28px 24px 40px;
+    overflow-y: auto;
+  }
+  .panel-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #C77DFF;
+    margin-bottom: 20px;
+  }
+
+  .section-block {
+    margin-bottom: 22px;
+  }
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #8B2FC9;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(139,47,201,0.2);
+  }
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .field-row.full { grid-template-columns: 1fr; }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  label {
+    font-size: 10.5px;
+    color: #9B72CF;
+    font-weight: 500;
+    letter-spacing: .03em;
+  }
+  input, select {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(139,47,201,0.3);
+    border-radius: 7px;
+    padding: 8px 11px;
+    font-size: 12.5px;
+    font-family: 'DM Sans', sans-serif;
+    color: #e0c8ff;
+    outline: none;
+    transition: border-color .2s;
+    width: 100%;
+  }
+  input:focus, select:focus {
+    border-color: #8B2FC9;
+    background: rgba(139,47,201,0.08);
+  }
+  input::placeholder { color: rgba(155,114,207,0.4); }
+  select option { background: #1a0a2e; color: #e0c8ff; }
+
+  /* Producto row */
+  .prod-row {
+    display: grid;
+    grid-template-columns: 2fr 2fr 1.5fr 1.5fr;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  /* Botón generar */
+  .btn-gen {
+    width: 100%;
+    margin-top: 24px;
+    padding: 13px;
+    background: linear-gradient(135deg, #6B21C8, #8B2FC9);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    letter-spacing: .03em;
+    transition: opacity .2s, transform .1s;
+  }
+  .btn-gen:hover  { opacity: .9; }
+  .btn-gen:active { transform: scale(.98); }
+
+  /* PREVIEW */
+  .preview-area {
+    background: #f0eafa;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 24px;
+    overflow-y: auto;
+  }
+  .preview-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #6B21C8;
+    margin-bottom: 20px;
+    align-self: flex-start;
+  }
+
+  /* PROPUESTA PREVIEW */
+  .propuesta {
+    background: #fff;
+    width: 100%;
+    max-width: 680px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(107,33,200,.15);
+  }
+
+  /* Header propuesta */
+  .prop-header {
+    background: #0f0720;
+    padding: 0;
+  }
+  .prop-topbar {
+    background: linear-gradient(90deg, #8B2FC9, #C13584);
+    height: 5px;
+  }
+  .prop-header-inner {
+    padding: 18px 22px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .prop-logo-lemon { color: #C77DFF; font-size: 20px; font-weight: 700; }
+  .prop-logo-flow  { color: #fff;    font-size: 20px; font-weight: 700; }
+  .prop-logo-by    { color: #9B72CF; font-size: 10px; display: block; margin-top: 1px; }
+  .prop-header-right { text-align: right; font-size: 10px; color: #9B72CF; line-height: 1.9; }
+  .prop-header-right .h { color: #e0c8ff; }
+  .prop-header-right .l { color: #C77DFF; }
+
+  .prop-subheader {
+    background: #6B21C8;
+    padding: 7px 22px;
+    display: flex;
+    gap: 0;
+  }
+  .prop-meta {
+    flex: 1;
+    font-size: 9.5px;
+    color: #e0c8ff;
+  }
+  .prop-meta b { color: #C77DFF; }
+
+  /* Cuerpo */
+  .prop-body { padding: 18px 22px; }
+
+  .prop-section { margin-bottom: 16px; }
+  .prop-sec-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6B21C8;
+    border-left: 3px solid #8B2FC9;
+    padding-left: 8px;
+    margin-bottom: 8px;
+  }
+
+  /* Grid campos */
+  .prop-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+  .prop-field {
+    background: #F8F5FF;
+    border: 0.5px solid #e5d5fa;
+    border-radius: 6px;
+    padding: 6px 10px;
+  }
+  .prop-field .fl { font-size: 8px; color: #9B72CF; margin-bottom: 1px; }
+  .prop-field .fv { font-size: 11px; font-weight: 600; color: #1a0a2e; }
+
+  /* Tabla productos */
+  .prop-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  .prop-table thead tr { background: #f3e8ff; }
+  .prop-table thead th {
+    text-align: left; padding: 7px 9px;
+    font-weight: 700; color: #4c1d95;
+    border-bottom: 1px solid #d8b4fe;
+    font-size: 9.5px;
+  }
+  .prop-table tbody td {
+    padding: 7px 9px;
+    color: #1a0a2e;
+    border-bottom: 0.5px solid #ede9f6;
+  }
+  .badge-gratis {
+    background: #EAF3DE; color: #3B6D11;
+    font-size: 8.5px; font-weight: 700;
+    padding: 2px 8px; border-radius: 20px;
+    display: inline-block;
+  }
+  .prop-total {
+    display: flex; justify-content: flex-end; margin-top: 7px;
+  }
+  .prop-total-box {
+    background: #0f0720; color: #e0c8ff;
+    font-size: 11px; font-weight: 700;
+    padding: 7px 16px; border-radius: 7px;
+  }
+
+  /* Condición especial */
+  .prop-cond {
+    background: #f3e8ff;
+    border-left: 3px solid #8B2FC9;
+    border: 0.5px solid #d8b4fe;
+    border-radius: 6px;
+    padding: 9px 12px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #4c1d95;
+  }
+
+  /* Legales */
+  .prop-legal-row {
+    display: flex; gap: 10px;
+    padding: 7px 10px;
+    border-bottom: 0.5px solid #ede9f6;
+    font-size: 9.5px;
+  }
+  .prop-legal-row:nth-child(odd) { background: #F8F5FF; }
+  .prop-legal-num { color: #6B21C8; font-weight: 700; min-width: 18px; }
+  .prop-legal-ttl { font-weight: 700; color: #1a0a2e; }
+  .prop-legal-desc { color: #6b7280; margin-top: 1px; }
+
+  /* Footer firma */
+  .prop-footer {
+    border-top: 1px solid #ede9f6;
+    padding: 12px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .prop-footer-left { font-size: 9px; color: #9B72CF; }
+  .prop-footer-right { text-align: center; font-size: 9px; color: #6b7280; }
+  .firma-line { border-top: 1px solid #6b7280; width: 140px; margin-bottom: 4px; }
+
+  /* BTN DESCARGAR */
+  .btn-dl {
+    margin-top: 16px;
+    padding: 11px 28px;
+    background: #0f0720;
+    color: #C77DFF;
+    border: 1px solid rgba(139,47,201,0.5);
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    letter-spacing: .03em;
+    transition: background .2s;
+  }
+  .btn-dl:hover { background: #1a0a2e; }
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<nav class="navbar">
+  <span class="logo-lemon">Lemon</span><span class="logo-flow">Flow</span>
+  <span class="logo-by">by LemonTech</span>
+</nav>
+
+<div class="main">
+
+  <!-- PANEL FORMULARIO -->
+  <aside class="panel">
+    <div class="panel-title">Generador de propuesta</div>
+
+    <!-- Account Manager -->
+    <div class="section-block">
+      <div class="section-label">Account Manager</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Nombre</label>
+          <input id="am_nombre" value="Valeria Zapata" oninput="update()"/>
+        </div>
+        <div class="field">
+          <label>Correo</label>
+          <input id="am_correo" value="vzapata@lemontech.com" oninput="update()"/>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Fecha de emisión</label>
+          <input id="am_emision" type="date" value="2026-05-04" oninput="update()"/>
+        </div>
+        <div class="field">
+          <label>Fecha de vencimiento</label>
+          <input id="am_vencimiento" type="date" value="2026-05-22" oninput="update()"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cliente -->
+    <div class="section-block">
+      <div class="section-label">Información del cliente</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Nombre de contacto</label>
+          <input id="cl_nombre" value="Maria Marta Amendolara" oninput="update()"/>
+        </div>
+        <div class="field">
+          <label>Correo</label>
+          <input id="cl_correo" value="mamendolara@andreani.com" oninput="update()"/>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Razón social</label>
+          <input id="cl_razon" value="Andreani" oninput="update()"/>
+        </div>
+        <div class="field">
+          <label>Tax ID</label>
+          <input id="cl_tax" placeholder="ej. 76.123.456-7" oninput="update()"/>
+        </div>
+      </div>
+      <div class="field-row full">
+        <div class="field">
+          <label>Dirección de facturación</label>
+          <input id="cl_dir" placeholder="Calle, ciudad, país" oninput="update()"/>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Inicio suscripción</label>
+          <input id="cl_inicio" value="Mayo 2026" oninput="update()"/>
+        </div>
+        <div class="field">
+          <label>Fin suscripción</label>
+          <input id="cl_fin" value="Abril 2027" oninput="update()"/>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Modalidad de facturación</label>
+          <select id="cl_modal" onchange="update()">
+            <option value="Anual">Anual</option>
+            <option value="Mensual">Mensual</option>
+            <option value="Semestral">Semestral</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Contacto de pagos</label>
+          <input id="cl_pagos" placeholder="Nombre contacto" oninput="update()"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Producto -->
+    <div class="section-block">
+      <div class="section-label">Producto</div>
+      <div class="prod-row">
+        <div class="field">
+          <label>Cantidad / Nombre</label>
+          <input id="pr_cant" value="Lemonflow" oninput="update()"/>
+        </div>
+        <div class="field">
+          <label>Producto / Add-on</label>
+          <input id="pr_prod" value="Lemonflow" oninput="update()"/>
+        </div>
+        <div class="field">
+          <label>Valor mensual</label>
+          <input id="pr_valor" value="420" oninput="update()"/>
+        </div>
+        <div class="field">
+          <label>Implementación</label>
+          <input id="pr_impl" value="Gratis" oninput="update()"/>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Vencimiento producto</label>
+          <input id="pr_venc" type="date" value="2026-05-25" oninput="update()"/>
+        </div>
+        <div class="field">
+          <label>Moneda</label>
+          <select id="pr_moneda" onchange="update()">
+            <option value="USD">USD</option>
+            <option value="CLP">CLP</option>
+            <option value="EUR">EUR</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Condición particular -->
+    <div class="section-block">
+      <div class="section-label">Condición particular</div>
+      <div class="field-row full">
+        <div class="field">
+          <label>Detalle</label>
+          <input id="cond_det" value="Capacitación e implementación gratis (contratación mayo)" oninput="update()"/>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-gen" onclick="update()">↻ Actualizar vista previa</button>
+  </aside>
+
+  <!-- PREVIEW -->
+  <section class="preview-area">
+    <div class="preview-title">Vista previa de la propuesta</div>
+    <div class="propuesta" id="propuesta"><!-- generado por JS --></div>
+    <button class="btn-dl" onclick="downloadPDF()">⬇ Descargar PDF</button>
+  </section>
+
+</div>
+
+<script>
+function v(id){ return document.getElementById(id).value; }
+
+function fmtDate(str){
+  if(!str) return '';
+  const d = new Date(str + 'T00:00:00');
+  if(isNaN(d)) return str;
+  return d.toLocaleDateString('es-CL', {day:'2-digit', month:'2-digit', year:'numeric'});
+}
+
+function calcTotal(){
+  const m = parseFloat(v('pr_valor')) || 0;
+  return (m * 12).toLocaleString('es-CL');
+}
+
+function update(){
+  const mon = v('pr_moneda');
+  const total = calcTotal();
+
+  document.getElementById('propuesta').innerHTML = `
+  <div class="prop-header">
+    <div class="prop-topbar"></div>
+    <div class="prop-header-inner">
+      <div>
+        <div><span class="prop-logo-lemon">Lemon</span><span class="prop-logo-flow">Flow</span></div>
+        <span class="prop-logo-by">by LemonTech</span>
+      </div>
+      <div class="prop-header-right">
+        <div class="h">Lemontech SpA · Tax ID 99.511.620-0</div>
+        <div>Las Condes, Santiago. Chile.</div>
+        <div class="l">www.lemontech.com</div>
+      </div>
+    </div>
+    <div class="prop-subheader">
+      <div class="prop-meta"><b>Account Manager</b> ${v('am_nombre')}</div>
+      <div class="prop-meta"><b>Correo</b> ${v('am_correo')}</div>
+      <div class="prop-meta"><b>Emisión</b> ${fmtDate(v('am_emision'))}</div>
+      <div class="prop-meta"><b>Vence</b> ${fmtDate(v('am_vencimiento'))}</div>
+    </div>
+  </div>
+
+  <div class="prop-body">
+
+    <div class="prop-section">
+      <div class="prop-sec-title">Información del cliente</div>
+      <div class="prop-fields">
+        <div class="prop-field"><div class="fl">Nombre de contacto</div><div class="fv">${v('cl_nombre')||'—'}</div></div>
+        <div class="prop-field"><div class="fl">Correo</div><div class="fv">${v('cl_correo')||'—'}</div></div>
+        <div class="prop-field"><div class="fl">Razón social</div><div class="fv">${v('cl_razon')||'—'}</div></div>
+        <div class="prop-field"><div class="fl">Tax ID</div><div class="fv">${v('cl_tax')||'—'}</div></div>
+        <div class="prop-field"><div class="fl">Dirección de facturación</div><div class="fv">${v('cl_dir')||'—'}</div></div>
+        <div class="prop-field"><div class="fl">Modalidad de facturación</div><div class="fv">${v('cl_modal')}</div></div>
+        <div class="prop-field"><div class="fl">Inicio suscripción</div><div class="fv">${v('cl_inicio')||'—'}</div></div>
+        <div class="prop-field"><div class="fl">Fin suscripción</div><div class="fv">${v('cl_fin')||'—'}</div></div>
+      </div>
+    </div>
+
+    <div class="prop-section">
+      <div class="prop-sec-title">Productos</div>
+      <table class="prop-table">
+        <thead><tr>
+          <th>Cantidad</th><th>Producto / Add-on</th><th>Valor mensual</th><th>Implementación</th><th>Vencimiento</th>
+        </tr></thead>
+        <tbody><tr>
+          <td>${v('pr_cant')||'—'}</td>
+          <td>${v('pr_prod')||'—'}</td>
+          <td>${v('pr_valor')||'0'} ${mon}</td>
+          <td><span class="badge-gratis">${v('pr_impl')||'—'}</span></td>
+          <td>${fmtDate(v('pr_venc'))}</td>
+        </tr></tbody>
+      </table>
+      <div class="prop-total">
+        <div class="prop-total-box">Valor total anual: ${total} ${mon}</div>
+      </div>
+    </div>
+
+    <div class="prop-section">
+      <div class="prop-sec-title">Condiciones particulares</div>
+      <div class="prop-cond">${v('cond_det')||'—'}</div>
+    </div>
+
+    <div class="prop-section">
+      <div class="prop-sec-title">Condiciones legales</div>
+      <div class="prop-legal-row">
+        <div class="prop-legal-num">1.</div>
+        <div><div class="prop-legal-ttl">Aceptación de la propuesta</div>
+        <div class="prop-legal-desc">La suscripción mediante firma implica la aceptación del servicio y de los Términos y Condiciones.</div></div>
+      </div>
+      <div class="prop-legal-row">
+        <div class="prop-legal-num">2.</div>
+        <div><div class="prop-legal-ttl">Términos y condiciones</div>
+        <div class="prop-legal-desc">recursos.lemontech.com/hubfs/Archivos-legales/ACUERDO-MARCO-DE-SERVICIOS-DE-LEMONTECH.pdf</div></div>
+      </div>
+      <div class="prop-legal-row">
+        <div class="prop-legal-num">3.</div>
+        <div><div class="prop-legal-ttl">Aviso de privacidad</div>
+        <div class="prop-legal-desc">recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="prop-footer">
+    <div class="prop-footer-left">Lemontech SpA · Tax ID 99.511.620-0</div>
+    <div class="prop-footer-right">
+      <div class="firma-line"></div>
+      Firma cliente
+    </div>
+  </div>
+  `;
+}
+
+function downloadPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = 210, M = 15, U = W - 2*M;
+  const mon = v('pr_moneda');
+  const total = calcTotal();
+
+  // Header negro
+  doc.setFillColor(15,7,32);
+  doc.rect(0,0,W,28,'F');
+  // Barra morada
+  doc.setFillColor(139,47,201);
+  doc.rect(0,0,W,2,'F');
+  // Logo
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16); doc.setTextColor(199,125,255);
+  doc.text('Lemon', M, 14);
+  const lw = doc.getTextWidth('Lemon');
+  doc.setTextColor(255,255,255);
+  doc.text('Flow', M+lw, 14);
+  doc.setFontSize(8); doc.setTextColor(155,114,207);
+  doc.text('by LemonTech', M, 20);
+  // Info derecha header
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8); doc.setTextColor(224,200,255);
+  doc.text('Lemontech SpA  ·  Tax ID 99.511.620-0', W-M, 12, {align:'right'});
+  doc.text('Las Condes, Santiago. Chile.', W-M, 18, {align:'right'});
+  doc.setTextColor(199,125,255);
+  doc.text('www.lemontech.com', W-M, 24, {align:'right'});
+
+  // Subheader morado
+  doc.setFillColor(107,33,200);
+  doc.rect(0,28,W,9,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(199,125,255);
+  const metas = [
+    ['Account Manager', v('am_nombre')],
+    ['Correo', v('am_correo')],
+    ['Emisión', fmtDate(v('am_emision'))],
+    ['Vence', fmtDate(v('am_vencimiento'))],
+  ];
+  const colW = U / 4;
+  metas.forEach(([lbl, val], i) => {
+    const x = M + i * colW;
+    doc.setFont('helvetica','bold'); doc.setTextColor(199,125,255);
+    doc.text(lbl, x, 33.5);
+    doc.setFont('helvetica','normal'); doc.setTextColor(224,200,255);
+    doc.text(val, x, 33.5 + 4);
+  });
+
+  let y = 44;
+  const secTitle = (txt) => {
+    doc.setDrawColor(139,47,201); doc.setLineWidth(0.8);
+    doc.line(M, y, M, y+5);
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(107,33,200);
+    doc.text(txt, M+4, y+4);
+    y += 9;
+  };
+  const fieldGrid = (pairs) => {
+    const hw = (U-3)/2;
+    for(let i=0;i<pairs.length;i+=2){
+      const row = pairs.slice(i, i+2);
+      row.forEach((p, j) => {
+        const x = M + j*(hw+3);
+        doc.setFillColor(248,245,255); doc.setDrawColor(229,213,250); doc.setLineWidth(0.3);
+        doc.roundedRect(x, y, hw, 10, 1.5, 1.5, 'FD');
+        doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(155,114,207);
+        doc.text(p[0], x+3, y+4);
+        doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(26,10,46);
+        doc.text(p[1]||'—', x+3, y+8.5);
+      });
+      y += 12;
+    }
+    y += 2;
+  };
+
+  // Cliente
+  secTitle('Información del cliente');
+  fieldGrid([
+    ['Nombre de contacto', v('cl_nombre')],
+    ['Correo', v('cl_correo')],
+    ['Razón social', v('cl_razon')],
+    ['Tax ID', v('cl_tax')],
+    ['Dirección de facturación', v('cl_dir')],
+    ['Modalidad de facturación', v('cl_modal')],
+    ['Inicio suscripción', v('cl_inicio')],
+    ['Fin suscripción', v('cl_fin')],
+  ]);
+
+  // Productos
+  secTitle('Productos');
+  const cols = [30,50,30,30,30];
+  const heads = ['Cantidad','Producto','Valor mensual','Implementación','Vencimiento'];
+  doc.setFillColor(243,232,255); doc.setDrawColor(216,180,254); doc.setLineWidth(0.3);
+  doc.rect(M, y, U, 8, 'FD');
+  let cx = M;
+  heads.forEach((h,i) => {
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(76,29,149);
+    doc.text(h, cx+2, y+5.5);
+    cx += cols[i];
+  });
+  y += 8;
+  const vals = [v('pr_cant'), v('pr_prod'), `${v('pr_valor')} ${mon}`, v('pr_impl'), fmtDate(v('pr_venc'))];
+  doc.setFillColor(255,255,255); doc.rect(M,y,U,8,'FD');
+  cx = M;
+  vals.forEach((val,i) => {
+    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(26,10,46);
+    doc.text(val||'—', cx+2, y+5.5);
+    cx += cols[i];
+  });
+  y += 10;
+  // Total
+  doc.setFillColor(15,7,32);
+  doc.roundedRect(W-M-62, y, 62, 8, 2, 2, 'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(224,200,255);
+  doc.text(`Valor total anual: ${total} ${mon}`, W-M-3, y+5.5, {align:'right'});
+  y += 14;
+
+  // Condición
+  secTitle('Condiciones particulares');
+  doc.setFillColor(243,232,255); doc.setDrawColor(216,180,254); doc.setLineWidth(0.3);
+  doc.rect(M, y, U, 10, 'FD');
+  doc.setDrawColor(139,47,201); doc.setLineWidth(1.5);
+  doc.line(M, y, M, y+10);
+  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(76,29,149);
+  doc.text(v('cond_det')||'—', M+4, y+6.5);
+  y += 15;
+
+  // Legales
+  secTitle('Condiciones legales');
+  const legales = [
+    ['1.', 'Aceptación de la propuesta', 'La suscripción mediante firma implica la aceptación del servicio.'],
+    ['2.', 'Términos y condiciones', 'recursos.lemontech.com/hubfs/Archivos-legales/ACUERDO-MARCO.pdf'],
+    ['3.', 'Aviso de privacidad', 'recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD.pdf'],
+  ];
+  legales.forEach(([n, t, d], i) => {
+    doc.setFillColor(i%2===0 ? 248 : 255, i%2===0 ? 245 : 255, i%2===0 ? 255 : 255);
+    doc.rect(M, y, U, 10, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(107,33,200);
+    doc.text(n, M+3, y+4.5);
+    doc.setTextColor(26,10,46);
+    doc.text(t, M+11, y+4.5);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(107,114,128);
+    doc.text(d, M+11, y+8.5);
+    y += 11;
+  });
+
+  y += 6;
+  doc.setDrawColor(216,180,254); doc.setLineWidth(0.4);
+  doc.line(M, y, W-M, y);
+  y += 6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(155,114,207);
+  doc.text('Lemontech SpA  ·  Tax ID 99.511.620-0', M, y+3);
+  doc.setTextColor(107,114,128);
+  doc.line(W-M-45, y+6, W-M, y+6);
+  doc.text('Firma cliente', W-M-22, y+10, {align:'center'});
+
+  doc.save(`LemonFlow_Propuesta_${v('cl_razon')||'Cliente'}.pdf`);
+}
+
+update();
+</script>
+</body>
+</html>
