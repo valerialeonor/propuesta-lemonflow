@@ -7,210 +7,155 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-  :root {
-    --negro: #1a1a1a;
-    --naranja: #E8610A;
-    --naranja-vib: #FF7A1A;
-    --naranja-clr: #FFF0E6;
-    --naranja-txt: #7A2E00;
-    --gris-bg: #FFF8F4;
-    --gris-txt: #6b7280;
-    --borde: #fcd5b3;
-    --blanco: #ffffff;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: #1a1a1a; min-height: 100vh; color: #1a1a1a; }
-
-  .topbar { background: linear-gradient(90deg, #E8610A, #FF9A3C); height: 4px; }
-  .navbar {
-    background: #1a1a1a; padding: 14px 32px;
-    display: flex; align-items: center; gap: 10px;
-    border-bottom: 1px solid rgba(232,97,10,0.3);
-  }
-  .logo-case  { color: #fff;    font-size: 20px; font-weight: 700; }
-  .logo-track { color: #E8610A; font-size: 20px; font-weight: 700; }
-  .logo-by    { color: #888;    font-size: 11px; margin-left: 4px; }
-
-  .main { display: grid; grid-template-columns: 420px 1fr; min-height: calc(100vh - 56px); }
-
-  /* PANEL */
-  .panel {
-    background: #111; border-right: 1px solid rgba(232,97,10,0.2);
-    padding: 28px 24px 40px; overflow-y: auto;
-  }
-  .panel-title { font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #E8610A; margin-bottom: 20px; }
-  .section-block { margin-bottom: 22px; }
-  .section-label {
-    font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
-    color: #E8610A; margin-bottom: 10px; padding-bottom: 5px;
-    border-bottom: 1px solid rgba(232,97,10,0.2);
-  }
-  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-  .field-row.full { grid-template-columns: 1fr; }
-  .field { display: flex; flex-direction: column; gap: 5px; }
-  label { font-size: 10.5px; color: #E8610A; font-weight: 500; letter-spacing: .03em; }
-  input, select {
-    background: rgba(255,255,255,0.04); border: 1px solid rgba(232,97,10,0.3);
-    border-radius: 7px; padding: 8px 11px; font-size: 12.5px;
-    font-family: 'DM Sans', sans-serif; color: #fcd5b3; outline: none; transition: border-color .2s; width: 100%;
-  }
-  input:focus, select:focus { border-color: #E8610A; background: rgba(232,97,10,0.08); }
-  input::placeholder { color: rgba(232,97,10,0.3); }
-  select option { background: #1a1a1a; color: #fcd5b3; }
-
-  .prod-row { display: grid; grid-template-columns: 2fr 2fr 1.5fr 1.5fr; gap: 8px; margin-bottom: 8px; }
-
-  .btn-gen {
-    width: 100%; margin-top: 24px; padding: 13px;
-    background: linear-gradient(135deg, #E8610A, #FF7A1A);
-    color: #fff; border: none; border-radius: 10px;
-    font-size: 13.5px; font-weight: 600; font-family: 'DM Sans', sans-serif;
-    cursor: pointer; letter-spacing: .03em; transition: opacity .2s, transform .1s;
-  }
-  .btn-gen:hover { opacity: .9; }
-  .btn-gen:active { transform: scale(.98); }
-
-  /* PREVIEW */
-  .preview-area {
-    background: #f5ede6; display: flex; flex-direction: column;
-    align-items: center; padding: 32px 24px; overflow-y: auto;
-  }
-  .preview-title {
-    font-size: 11px; font-weight: 600; letter-spacing: .12em;
-    text-transform: uppercase; color: #E8610A; margin-bottom: 20px; align-self: flex-start;
-  }
-
-  /* PROPUESTA */
-  .propuesta {
-    background: #fff; width: 100%; max-width: 680px;
-    border-radius: 12px; overflow: hidden;
-    box-shadow: 0 8px 40px rgba(232,97,10,.18);
-  }
-
-  .prop-header { background: #1a1a1a; }
-  .prop-topbar { background: linear-gradient(90deg, #E8610A, #FF9A3C); height: 5px; }
-  .prop-header-inner {
-    padding: 18px 22px 12px; display: flex;
-    justify-content: space-between; align-items: flex-start;
-  }
-  .prop-logo-case  { color: #fff;    font-size: 20px; font-weight: 700; }
-  .prop-logo-track { color: #E8610A; font-size: 20px; font-weight: 700; }
-  .prop-logo-by    { color: #888; font-size: 10px; display: block; margin-top: 2px; }
-  .prop-header-right { text-align: right; font-size: 10px; color: #888; line-height: 1.9; }
-  .prop-header-right .h { color: #fcd5b3; }
-  .prop-header-right .l { color: #E8610A; }
-
-  .prop-subheader {
-    background: #E8610A; padding: 7px 22px; display: flex; gap: 0;
-  }
-  .prop-meta { flex: 1; font-size: 9.5px; color: #fff3ec; }
-  .prop-meta b { color: #fff; }
-
-  .prop-body { padding: 18px 22px; background: #fff; }
-  .prop-section { margin-bottom: 16px; }
-  .prop-sec-title {
-    font-size: 11px; font-weight: 700; color: #E8610A;
-    border-left: 3px solid #E8610A; padding-left: 8px; margin-bottom: 8px;
-  }
-
-  .prop-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-  .prop-field {
-    background: #FFF8F4; border: 0.5px solid #fcd5b3;
-    border-radius: 6px; padding: 6px 10px;
-  }
-  .prop-field .fl { font-size: 8px; color: #E8610A; margin-bottom: 1px; }
-  .prop-field .fv { font-size: 11px; font-weight: 600; color: #1a1a1a; }
-
-  .prop-table { width: 100%; border-collapse: collapse; font-size: 10px; }
-  .prop-table thead tr { background: #FFF0E6; }
-  .prop-table thead th {
-    text-align: left; padding: 7px 9px; font-weight: 700;
-    color: #7A2E00; border-bottom: 1px solid #fcd5b3; font-size: 9.5px;
-  }
-  .prop-table tbody td { padding: 7px 9px; color: #1a1a1a; border-bottom: 0.5px solid #fce8d8; }
-  .badge-gratis {
-    background: #EAF3DE; color: #3B6D11; font-size: 8.5px; font-weight: 700;
-    padding: 2px 8px; border-radius: 20px; display: inline-block;
-  }
-
-  .prop-total-row {
-    display: flex; justify-content: flex-end; gap: 8px; margin-top: 7px; flex-direction: column; align-items: flex-end;
-  }
-  .prop-total-box {
-    background: #1a1a1a; color: #fcd5b3; font-size: 11px; font-weight: 700;
-    padding: 6px 16px; border-radius: 7px; min-width: 200px; text-align: right;
-  }
-
-  .prop-cond {
-    background: #FFF0E6; border-left: 3px solid #E8610A;
-    border: 0.5px solid #fcd5b3; border-radius: 6px;
-    padding: 8px 12px; margin-bottom: 6px;
-  }
-  .prop-cond .cl { font-size: 8px; color: #E8610A; margin-bottom: 2px; font-weight: 600; }
-  .prop-cond .cv { font-size: 10px; font-weight: 700; color: #7A2E00; }
-
-  .prop-legal-row {
-    display: flex; gap: 10px; padding: 7px 10px;
-    border-bottom: 0.5px solid #fce8d8; font-size: 9.5px;
-  }
-  .prop-legal-row:nth-child(odd) { background: #FFF8F4; }
-  .prop-legal-num { color: #E8610A; font-weight: 700; min-width: 18px; }
-  .prop-legal-ttl { font-weight: 700; color: #1a1a1a; }
-  .prop-legal-desc { color: #6b7280; margin-top: 1px; font-size: 8.5px; }
-
-  .prop-footer {
-    border-top: 1px solid #fce8d8; padding: 12px 22px;
-    display: flex; justify-content: space-between; align-items: flex-end;
-  }
-  .prop-footer-left { font-size: 9px; color: #E8610A; }
-  .prop-footer-right { text-align: center; font-size: 9px; color: #6b7280; }
-  .firma-line { border-top: 1px solid #6b7280; width: 160px; margin: 0 auto 4px; }
-
-  .btn-dl {
-    margin-top: 16px; padding: 11px 28px; background: #1a1a1a;
-    color: #E8610A; border: 1px solid rgba(232,97,10,0.5); border-radius: 8px;
-    font-size: 12.5px; font-weight: 600; font-family: 'DM Sans', sans-serif;
-    cursor: pointer; letter-spacing: .03em; transition: background .2s;
-  }
-  .btn-dl:hover { background: #2a1a10; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:#1a1a1a;min-height:100vh;color:#1a1a1a;}
+  .topbar{background:linear-gradient(90deg,#E8610A,#FF9A3C);height:4px;}
+  .navbar{background:#1a1a1a;padding:14px 32px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(232,97,10,0.3);justify-content:space-between;}
+  .navbar-left{display:flex;align-items:center;gap:10px;}
+  .logo-case{color:#fff;font-size:20px;font-weight:700;}
+  .logo-track{color:#E8610A;font-size:20px;font-weight:700;}
+  .logo-by{color:#888;font-size:11px;margin-left:4px;}
+  .btn-repo{background:rgba(232,97,10,0.12);border:1px solid rgba(232,97,10,0.35);color:#E8610A;padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .2s;}
+  .btn-repo:hover{background:rgba(232,97,10,0.25);}
+  .main{display:grid;grid-template-columns:440px 1fr;min-height:calc(100vh - 56px);}
+  .panel{background:#111;border-right:1px solid rgba(232,97,10,0.2);padding:28px 24px 40px;overflow-y:auto;}
+  .panel-title{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#E8610A;margin-bottom:20px;}
+  .section-block{margin-bottom:22px;}
+  .section-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#E8610A;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid rgba(232,97,10,0.2);}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  .field-row.full{grid-template-columns:1fr;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  label{font-size:10.5px;color:#E8610A;font-weight:500;letter-spacing:.03em;}
+  input,select,textarea{background:rgba(255,255,255,0.04);border:1px solid rgba(232,97,10,0.3);border-radius:7px;padding:8px 11px;font-size:12.5px;font-family:'DM Sans',sans-serif;color:#fcd5b3;outline:none;transition:border-color .2s;width:100%;}
+  textarea{resize:vertical;min-height:60px;}
+  input:focus,select:focus,textarea:focus{border-color:#E8610A;background:rgba(232,97,10,0.08);}
+  input::placeholder,textarea::placeholder{color:rgba(232,97,10,0.3);}
+  select option{background:#1a1a1a;color:#fcd5b3;}
+  .prod-row{display:grid;grid-template-columns:2fr 2fr 1.5fr 1.5fr;gap:8px;margin-bottom:8px;}
+  .toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .toggle-lbl{font-size:11px;color:#fcd5b3;font-weight:500;}
+  .toggle{position:relative;width:36px;height:20px;cursor:pointer;}
+  .toggle input{opacity:0;width:0;height:0;}
+  .toggle-slider{position:absolute;inset:0;background:rgba(232,97,10,0.15);border-radius:20px;transition:.3s;border:1px solid rgba(232,97,10,0.3);}
+  .toggle-slider:before{content:'';position:absolute;width:14px;height:14px;background:#E8610A;border-radius:50%;left:2px;top:2px;transition:.3s;opacity:.6;}
+  .toggle input:checked+.toggle-slider{background:#E8610A;}
+  .toggle input:checked+.toggle-slider:before{transform:translateX(16px);background:#fff;opacity:1;}
+  .second-prod{display:none;}
+  .second-prod.visible{display:block;}
+  .prod2-label{font-size:10px;color:#E8610A;font-weight:600;margin-bottom:8px;padding:4px 8px;background:rgba(232,97,10,0.1);border-radius:5px;display:inline-block;}
+  .btn-gen{width:100%;margin-top:24px;padding:13px;background:linear-gradient(135deg,#E8610A,#FF7A1A);color:#fff;border:none;border-radius:10px;font-size:13.5px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;letter-spacing:.03em;transition:opacity .2s,transform .1s;}
+  .btn-gen:hover{opacity:.9;}
+  .btn-gen:active{transform:scale(.98);}
+  .action-btns{display:flex;gap:8px;margin-top:10px;}
+  .btn-save{flex:1;padding:10px;background:rgba(232,97,10,0.12);border:1px solid rgba(232,97,10,0.35);color:#E8610A;border-radius:8px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .2s;}
+  .btn-save:hover{background:rgba(232,97,10,0.25);}
+  .preview-area{background:#f5ede6;display:flex;flex-direction:column;align-items:center;padding:32px 24px;overflow-y:auto;}
+  .preview-title{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#E8610A;margin-bottom:20px;align-self:flex-start;}
+  .propuesta{background:#fff;width:100%;max-width:680px;border-radius:12px;overflow:hidden;box-shadow:0 8px 40px rgba(232,97,10,.18);}
+  .prop-header{background:#1a1a1a;}
+  .prop-topbar{background:linear-gradient(90deg,#E8610A,#FF9A3C);height:5px;}
+  .prop-header-inner{padding:18px 22px 12px;display:flex;justify-content:space-between;align-items:flex-start;}
+  .prop-logo-case{color:#fff;font-size:20px;font-weight:700;}
+  .prop-logo-track{color:#E8610A;font-size:20px;font-weight:700;}
+  .prop-logo-by{color:#888;font-size:10px;display:block;margin-top:2px;}
+  .prop-header-right{text-align:right;font-size:10px;color:#888;line-height:1.9;}
+  .prop-header-right .h{color:#fcd5b3;}
+  .prop-header-right .l{color:#E8610A;}
+  .prop-subheader{background:#E8610A;padding:7px 22px;display:flex;gap:0;}
+  .prop-meta{flex:1;font-size:9.5px;color:#fff3ec;}
+  .prop-meta b{color:#fff;}
+  .prop-body{padding:18px 22px;background:#fff;}
+  .prop-section{margin-bottom:16px;}
+  .prop-sec-title{font-size:11px;font-weight:700;color:#E8610A;border-left:3px solid #E8610A;padding-left:8px;margin-bottom:8px;}
+  .prop-fields{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+  .prop-field{background:#FFF8F4;border:0.5px solid #fcd5b3;border-radius:6px;padding:6px 10px;}
+  .prop-field .fl{font-size:8px;color:#E8610A;margin-bottom:1px;}
+  .prop-field .fv{font-size:11px;font-weight:600;color:#1a1a1a;}
+  .prop-table{width:100%;border-collapse:collapse;font-size:10px;}
+  .prop-table thead tr{background:#FFF0E6;}
+  .prop-table thead th{text-align:left;padding:7px 9px;font-weight:700;color:#7A2E00;border-bottom:1px solid #fcd5b3;font-size:9.5px;}
+  .prop-table tbody td{padding:7px 9px;color:#1a1a1a;border-bottom:0.5px solid #fce8d8;}
+  .prop-table tbody tr:nth-child(2) td{background:#fffaf7;}
+  .badge-gratis{background:#EAF3DE;color:#3B6D11;font-size:8.5px;font-weight:700;padding:2px 8px;border-radius:20px;display:inline-block;}
+  .prop-total-row{display:flex;justify-content:flex-end;gap:8px;margin-top:7px;flex-wrap:wrap;}
+  .prop-total-box{background:#1a1a1a;color:#fcd5b3;font-size:11px;font-weight:700;padding:6px 16px;border-radius:7px;min-width:200px;text-align:right;}
+  .prop-total-box.alt{background:#E8610A;color:#fff;}
+  .prop-desc{background:#FFF8F4;border:0.5px solid #fcd5b3;border-radius:6px;padding:8px 12px;font-size:10px;color:#7A2E00;margin-bottom:8px;line-height:1.6;}
+  .prop-desc-lbl{font-size:8px;color:#E8610A;font-weight:600;display:block;margin-bottom:3px;}
+  .prop-cond{background:#FFF0E6;border-left:3px solid #E8610A;border:0.5px solid #fcd5b3;border-radius:6px;padding:8px 12px;margin-bottom:6px;}
+  .prop-cond .cl{font-size:8px;color:#E8610A;margin-bottom:2px;font-weight:600;}
+  .prop-cond .cv{font-size:10px;font-weight:700;color:#7A2E00;}
+  .prop-legal-row{display:flex;gap:10px;padding:7px 10px;border-bottom:0.5px solid #fce8d8;font-size:9.5px;}
+  .prop-legal-row:nth-child(odd){background:#FFF8F4;}
+  .prop-legal-num{color:#E8610A;font-weight:700;min-width:18px;}
+  .prop-legal-ttl{font-weight:700;color:#1a1a1a;}
+  .prop-legal-desc{color:#6b7280;margin-top:1px;}
+  .prop-legal-desc a{color:#E8610A;text-decoration:underline;font-size:9px;}
+  .prop-footer{border-top:1px solid #fce8d8;padding:12px 22px;display:flex;justify-content:space-between;align-items:flex-end;}
+  .prop-footer-left{font-size:9px;color:#E8610A;}
+  .prop-footer-right{text-align:center;font-size:9px;color:#6b7280;}
+  .firma-line{border-top:1px solid #6b7280;width:160px;margin:0 auto 4px;}
+  .btn-dl{margin-top:16px;padding:11px 28px;background:#1a1a1a;color:#E8610A;border:1px solid rgba(232,97,10,0.5);border-radius:8px;font-size:12.5px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;letter-spacing:.03em;transition:background .2s;}
+  .btn-dl:hover{background:#2a1a10;}
+  /* MODAL */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:#1a1209;border:1px solid rgba(232,97,10,0.35);border-radius:14px;width:560px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;}
+  .modal-header{padding:20px 24px 14px;border-bottom:1px solid rgba(232,97,10,0.2);display:flex;justify-content:space-between;align-items:center;}
+  .modal-title{font-size:14px;font-weight:600;color:#E8610A;}
+  .modal-close{background:none;border:none;color:#fcd5b3;font-size:20px;cursor:pointer;padding:0 4px;}
+  .modal-body{padding:16px 24px;overflow-y:auto;flex:1;}
+  .repo-empty{text-align:center;color:#fcd5b3;font-size:13px;padding:32px 0;}
+  .repo-item{background:rgba(232,97,10,0.07);border:1px solid rgba(232,97,10,0.2);border-radius:10px;padding:12px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .repo-item-info{flex:1;min-width:0;}
+  .repo-item-name{font-size:13px;font-weight:600;color:#fcd5b3;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .repo-item-meta{font-size:10.5px;color:#E8610A;}
+  .repo-item-btns{display:flex;gap:6px;flex-shrink:0;}
+  .btn-load{background:#E8610A;border:none;color:#fff;padding:6px 14px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+  .btn-load:hover{background:#FF7A1A;}
+  .btn-del{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#f87171;padding:6px 10px;border-radius:6px;font-size:11.5px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+  .btn-del:hover{background:rgba(239,68,68,0.2);}
+  .toast{position:fixed;bottom:24px;right:24px;background:#E8610A;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:opacity .3s;z-index:2000;pointer-events:none;}
+  .toast.show{opacity:1;}
 </style>
 </head>
 <body>
 <div class="topbar"></div>
 <nav class="navbar">
-  <span class="logo-case">Case</span><span class="logo-track">Tracking</span>
-  <span class="logo-by">by LemonTech</span>
+  <div class="navbar-left">
+    <span class="logo-case">Case</span><span class="logo-track">Tracking</span>
+    <span class="logo-by">by LemonTech</span>
+  </div>
+  <button class="btn-repo" onclick="openRepo()">📁 Mis propuestas</button>
 </nav>
 
 <div class="main">
-
-  <!-- FORMULARIO -->
   <aside class="panel">
     <div class="panel-title">Generador de propuesta</div>
 
     <div class="section-block">
       <div class="section-label">Account Manager</div>
       <div class="field-row">
-        <div class="field"><label>Nombre</label><input id="am_nombre" value="Rodolfo Chiari" oninput="update()"/></div>
-        <div class="field"><label>Correo</label><input id="am_correo" value="rchiari@lemontech.com" oninput="update()"/></div>
+        <div class="field"><label>Nombre</label><input id="am_nombre" placeholder="Tu nombre" oninput="update()"/></div>
+        <div class="field"><label>Correo</label><input id="am_correo" placeholder="tu@lemontech.com" oninput="update()"/></div>
       </div>
       <div class="field-row">
-        <div class="field"><label>Company ID</label><input id="am_compid" value="58295579181" oninput="update()"/></div>
-        <div class="field"><label>Fecha de emisión</label><input id="am_emision" type="date" value="2026-05-05" oninput="update()"/></div>
+        <div class="field"><label>Company ID</label><input id="am_compid" placeholder="ej. 58295579181" oninput="update()"/></div>
+        <div class="field"><label>Fecha de emisión</label><input id="am_emision" type="date" oninput="update()"/></div>
       </div>
       <div class="field-row">
-        <div class="field"><label>Fecha de vencimiento</label><input id="am_vencimiento" type="date" value="2026-05-30" oninput="update()"/></div>
+        <div class="field"><label>Fecha de vencimiento</label><input id="am_vencimiento" type="date" oninput="update()"/></div>
       </div>
     </div>
 
     <div class="section-block">
       <div class="section-label">Información del cliente</div>
       <div class="field-row">
-        <div class="field"><label>Nombre de contacto</label><input id="cl_nombre" value="Carlos Martínez" oninput="update()"/></div>
-        <div class="field"><label>Correo</label><input id="cl_correo" value="carlos.manuel@cmrlex.com" oninput="update()"/></div>
+        <div class="field"><label>Nombre de contacto</label><input id="cl_nombre" placeholder="Nombre del contacto" oninput="update()"/></div>
+        <div class="field"><label>Correo</label><input id="cl_correo" placeholder="correo@cliente.com" oninput="update()"/></div>
       </div>
       <div class="field-row">
-        <div class="field"><label>Empresa</label><input id="cl_empresa" value="Láragos" oninput="update()"/></div>
+        <div class="field"><label>Empresa</label><input id="cl_empresa" placeholder="Nombre empresa" oninput="update()"/></div>
         <div class="field"><label>RUT / Tax ID</label><input id="cl_rut" placeholder="ej. 76.123.456-7" oninput="update()"/></div>
       </div>
       <div class="field-row">
@@ -225,8 +170,8 @@
         <div class="field"><label>Dirección</label><input id="cl_dir" placeholder="Calle, ciudad, país" oninput="update()"/></div>
       </div>
       <div class="field-row">
-        <div class="field"><label>Inicio suscripción</label><input id="cl_inicio" value="Mayo 2026" oninput="update()"/></div>
-        <div class="field"><label>Fin suscripción</label><input id="cl_fin" value="Abril 2027" oninput="update()"/></div>
+        <div class="field"><label>Inicio suscripción</label><input id="cl_inicio" placeholder="ej. Mayo 2026" oninput="update()"/></div>
+        <div class="field"><label>Fin suscripción</label><input id="cl_fin" placeholder="ej. Abril 2027" oninput="update()"/></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Modalidad de facturación</label>
@@ -242,23 +187,44 @@
     <div class="section-block">
       <div class="section-label">Producto</div>
       <div class="prod-row">
-        <div class="field"><label>Cantidad</label><input id="pr_cant" value="1000 procesos judiciales" oninput="update()"/></div>
-        <div class="field"><label>Producto / Add-on</label><input id="pr_prod" value="CaseTracking Enterprise" oninput="update()"/></div>
-        <div class="field"><label>Valor mensual</label><input id="pr_valor" value="24775" oninput="update()"/></div>
-        <div class="field"><label>Implementación</label><input id="pr_impl" value="Gratis" oninput="update()"/></div>
+        <div class="field"><label>Cantidad</label><input id="pr_cant" placeholder="ej. 1000 procesos" oninput="update()"/></div>
+        <div class="field"><label>Producto / Add-on</label><input id="pr_prod" placeholder="ej. CaseTracking Enterprise" oninput="update()"/></div>
+        <div class="field"><label>Valor mensual</label><input id="pr_valor" placeholder="0" oninput="update()"/></div>
+        <div class="field"><label>Implementación</label><input id="pr_impl" placeholder="ej. Gratis" oninput="update()"/></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Moneda</label>
           <select id="pr_moneda" onchange="update()">
-            <option value="MXN">MXN</option>
-            <option value="USD">USD</option>
-            <option value="CLP">CLP</option>
-            <option value="EUR">EUR</option>
-            <option value="COP">COP</option>
-            <option value="PEN">PEN</option>
+            <option value="MXN">MXN</option><option value="USD">USD</option>
+            <option value="CLP">CLP</option><option value="EUR">EUR</option>
+            <option value="COP">COP</option><option value="PEN">PEN</option>
           </select>
         </div>
-        <div class="field"><label>Vencimiento producto</label><input id="pr_venc" type="date" value="2026-05-30" oninput="update()"/></div>
+        <div class="field"><label>Vencimiento producto</label><input id="pr_venc" type="date" oninput="update()"/></div>
+      </div>
+      <div class="field-row full">
+        <div class="field"><label>Descripción del cobro (opcional)</label>
+          <textarea id="pr_desc" placeholder="Describe qué incluye este plan: cantidad de procesos, usuarios, módulos, etc." oninput="update()"></textarea>
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <label class="toggle"><input type="checkbox" id="toggle2" onchange="toggleSecond()"/><span class="toggle-slider"></span></label>
+        <span class="toggle-lbl">Agregar segunda cotización (opcional)</span>
+      </div>
+      <div class="second-prod" id="second-prod">
+        <div class="prod2-label">✦ Opción 2</div>
+        <div class="prod-row">
+          <div class="field"><label>Cantidad</label><input id="pr2_cant" placeholder="ej. 2000 procesos" oninput="update()"/></div>
+          <div class="field"><label>Producto / Add-on</label><input id="pr2_prod" placeholder="ej. CaseTracking Enterprise" oninput="update()"/></div>
+          <div class="field"><label>Valor mensual</label><input id="pr2_valor" placeholder="0" oninput="update()"/></div>
+          <div class="field"><label>Implementación</label><input id="pr2_impl" placeholder="ej. Gratis" oninput="update()"/></div>
+        </div>
+        <div class="field-row full">
+          <div class="field"><label>Descripción opción 2 (opcional)</label>
+            <textarea id="pr2_desc" placeholder="Describe qué incluye esta segunda opción" oninput="update()"></textarea>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -266,20 +232,22 @@
       <div class="section-label">Condiciones particulares</div>
       <div class="field-row full">
         <div class="field"><label>Detalle condición</label>
-          <input id="cond_det" value="Usuarios ilimitados e implementación y capacitación gratis" oninput="update()"/>
+          <input id="cond_det" placeholder="Describe la condición especial" oninput="update()"/>
         </div>
       </div>
       <div class="field-row full">
         <div class="field"><label>Vigencia condición</label>
-          <input id="cond_vig" value="Durante año 2025" oninput="update()"/>
+          <input id="cond_vig" placeholder="ej. Durante año 2026" oninput="update()"/>
         </div>
       </div>
     </div>
 
     <button class="btn-gen" onclick="update()">↻ Actualizar vista previa</button>
+    <div class="action-btns">
+      <button class="btn-save" onclick="saveProposal()">💾 Guardar propuesta</button>
+    </div>
   </aside>
 
-  <!-- PREVIEW -->
   <section class="preview-area">
     <div class="preview-title">Vista previa de la propuesta</div>
     <div class="propuesta" id="propuesta"></div>
@@ -287,40 +255,60 @@
   </section>
 </div>
 
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-repo" onclick="if(event.target===this)closeRepo()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">📁 Mis propuestas guardadas</span>
+      <button class="modal-close" onclick="closeRepo()">✕</button>
+    </div>
+    <div class="modal-body" id="repo-list"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
 <script>
-function v(id){ return document.getElementById(id).value; }
+function v(id){return(document.getElementById(id)||{}).value||'';}
+function fmtDate(str){if(!str)return'';const d=new Date(str+'T00:00:00');if(isNaN(d))return str;return d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function fmtNum(n){return parseFloat(n||0).toLocaleString('es-CL');}
+function calcTotal(val){return((parseFloat(val)||0)*12).toLocaleString('es-CL');}
 
-function fmtDate(str){
-  if(!str) return '';
-  const d = new Date(str + 'T00:00:00');
-  if(isNaN(d)) return str;
-  return d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+function toggleSecond(){
+  const on=document.getElementById('toggle2').checked;
+  document.getElementById('second-prod').classList.toggle('visible',on);
+  update();
 }
 
-function fmtNum(n){
-  return parseFloat(n||0).toLocaleString('es-CL');
-}
-
-function calcTotal(){
-  return (parseFloat(v('pr_valor')||0)*12).toLocaleString('es-CL');
-}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
 function update(){
-  const mon = v('pr_moneda');
-  const total = calcTotal();
-  document.getElementById('propuesta').innerHTML = `
+  const mon=v('pr_moneda');
+  const total=calcTotal(v('pr_valor'));
+  const show2=document.getElementById('toggle2').checked;
+  const total2=calcTotal(v('pr2_valor'));
+  const desc=v('pr_desc');
+  const desc2=v('pr2_desc');
+
+  const prod2Row=show2?`<tr style="background:#fffaf7;">
+    <td>${v('pr2_cant')||'—'}</td><td>${v('pr2_prod')||'—'}</td>
+    <td>${fmtNum(v('pr2_valor'))}</td>
+    <td><span class="badge-gratis">${v('pr2_impl')||'—'}</span></td><td>${mon}</td>
+  </tr>`:'';
+
+  const descBlock=desc?`<div class="prop-desc"><span class="prop-desc-lbl">${show2?'DESCRIPCIÓN OPCIÓN 1':'DESCRIPCIÓN'}</span>${desc}</div>`:'';
+  const desc2Block=(show2&&desc2)?`<div class="prop-desc"><span class="prop-desc-lbl">DESCRIPCIÓN OPCIÓN 2</span>${desc2}</div>`:'';
+
+  let totales=`<div class="prop-total-box">${show2?'Opción 1 — ':''}Valor total anual &nbsp; ${total} ${mon}</div>
+    <div class="prop-total-box" style="background:#E8610A;color:#fff;">${show2?'Opción 1 — ':''}Valor mensual &nbsp; ${fmtNum(v('pr_valor'))} ${mon}</div>`;
+  if(show2) totales+=`<div class="prop-total-box alt">Opción 2 — Valor total anual &nbsp; ${total2} ${mon}</div>
+    <div class="prop-total-box" style="background:#FF9A3C;color:#fff;">Opción 2 — Valor mensual &nbsp; ${fmtNum(v('pr2_valor'))} ${mon}</div>`;
+
+  document.getElementById('propuesta').innerHTML=`
   <div class="prop-header">
     <div class="prop-topbar"></div>
     <div class="prop-header-inner">
-      <div>
-        <div><span class="prop-logo-case">Case</span><span class="prop-logo-track">Tracking</span></div>
-        <span class="prop-logo-by">by LemonTech</span>
-      </div>
-      <div class="prop-header-right">
-        <div class="h">Lemontech SpA · Tax ID 99.511.620-0</div>
-        <div>Las Condes, Santiago. Chile.</div>
-        <div class="l">www.lemontech.com</div>
-      </div>
+      <div><div><span class="prop-logo-case">Case</span><span class="prop-logo-track">Tracking</span></div><span class="prop-logo-by">by LemonTech</span></div>
+      <div class="prop-header-right"><div class="h">Lemontech SpA · Tax ID 99.511.620-0</div><div>Las Condes, Santiago. Chile.</div><div class="l">www.lemontech.com</div></div>
     </div>
     <div class="prop-subheader">
       <div class="prop-meta"><b>Account Manager</b> ${v('am_nombre')}</div>
@@ -330,9 +318,7 @@ function update(){
       <div class="prop-meta"><b>Vence</b> ${fmtDate(v('am_vencimiento'))}</div>
     </div>
   </div>
-
   <div class="prop-body">
-
     <div class="prop-section">
       <div class="prop-sec-title">Información del cliente</div>
       <div class="prop-fields">
@@ -350,253 +336,239 @@ function update(){
         <div class="prop-field"><div class="fl">Fin suscripción</div><div class="fv">${v('cl_fin')||'—'}</div></div>
       </div>
     </div>
-
     <div class="prop-section">
-      <div class="prop-sec-title">Productos</div>
+      <div class="prop-sec-title">Productos${show2?' — Doble cotización':''}</div>
+      ${descBlock}${desc2Block}
       <table class="prop-table">
-        <thead><tr>
-          <th>Cantidad</th><th>Producto / Add-on</th><th>Valor mensual</th><th>Implementación</th><th>Moneda</th>
-        </tr></thead>
-        <tbody><tr>
-          <td>${v('pr_cant')||'—'}</td>
-          <td>${v('pr_prod')||'—'}</td>
-          <td>${fmtNum(v('pr_valor'))}</td>
-          <td><span class="badge-gratis">${v('pr_impl')||'—'}</span></td>
-          <td>${mon}</td>
-        </tr></tbody>
+        <thead><tr><th>Cantidad</th><th>Producto / Add-on</th><th>Valor mensual</th><th>Implementación</th><th>Moneda</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>${v('pr_cant')||'—'}</td><td>${v('pr_prod')||'—'}</td>
+            <td>${fmtNum(v('pr_valor'))}</td>
+            <td><span class="badge-gratis">${v('pr_impl')||'—'}</span></td><td>${mon}</td>
+          </tr>
+          ${prod2Row}
+        </tbody>
       </table>
-      <div class="prop-total-row">
-        <div class="prop-total-box">Valor total anual &nbsp;&nbsp; ${total} ${mon}</div>
-        <div class="prop-total-box" style="background:#E8610A;">Valor mensual &nbsp;&nbsp; ${fmtNum(v('pr_valor'))} ${mon}</div>
-      </div>
+      <div class="prop-total-row">${totales}</div>
     </div>
-
     <div class="prop-section">
       <div class="prop-sec-title">Condiciones particulares</div>
-      <div class="prop-cond">
-        <div class="cl">Detalle condición particular</div>
-        <div class="cv">${v('cond_det')||'—'}</div>
-      </div>
-      <div class="prop-cond" style="margin-top:5px;">
-        <div class="cl">Vigencia condición particular</div>
-        <div class="cv">${v('cond_vig')||'—'}</div>
-      </div>
+      <div class="prop-cond"><div class="cl">Detalle condición particular</div><div class="cv">${v('cond_det')||'—'}</div></div>
+      <div class="prop-cond" style="margin-top:5px;"><div class="cl">Vigencia condición particular</div><div class="cv">${v('cond_vig')||'—'}</div></div>
     </div>
-
     <div class="prop-section">
       <div class="prop-sec-title">Términos y condiciones</div>
       <div class="prop-legal-row">
         <div class="prop-legal-num">1.</div>
         <div><div class="prop-legal-ttl">Aceptación de la propuesta</div>
-        <div class="prop-legal-desc">La suscripción mediante firma de las condiciones comerciales descritas en este documento y la consiguiente emisión de una orden de compra, implican la aceptación del servicio y de los Términos y Condiciones que regulan el uso del mismo.</div></div>
+        <div class="prop-legal-desc">La suscripción mediante firma de las condiciones comerciales descritas en este documento y la consiguiente emisión de una orden de compra, implican la aceptación del servicio y de los Términos y Condiciones.</div></div>
       </div>
       <div class="prop-legal-row">
         <div class="prop-legal-num">2.</div>
         <div><div class="prop-legal-ttl">Términos y condiciones</div>
-        <div class="prop-legal-desc">recursos.lemontech.com/hubfs/Archivos-legales/ACUERDO-MARCO-DE-SERVICIOS-DE-LEMONTECH.pdf</div></div>
+        <div class="prop-legal-desc"><a href="https://recursos.lemontech.com/hubfs/Archivos-legales/ACUERDO-MARCO-DE-SERVICIOS-DE-LEMONTECH.pdf" target="_blank">recursos.lemontech.com/hubfs/Archivos-legales/ACUERDO-MARCO-DE-SERVICIOS-DE-LEMONTECH.pdf</a></div></div>
       </div>
       <div class="prop-legal-row">
         <div class="prop-legal-num">3.</div>
         <div><div class="prop-legal-ttl">Aviso de privacidad</div>
-        <div class="prop-legal-desc">recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf</div></div>
+        <div class="prop-legal-desc"><a href="https://recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf" target="_blank">recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf</a></div></div>
       </div>
       <div class="prop-legal-row">
         <div class="prop-legal-num">4.</div>
         <div><div class="prop-legal-ttl">Encargo Tratamiento de datos</div>
-        <div class="prop-legal-desc">recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf</div></div>
+        <div class="prop-legal-desc"><a href="https://recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf" target="_blank">recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf</a></div></div>
       </div>
     </div>
   </div>
-
   <div class="prop-footer">
     <div class="prop-footer-left">Lemontech SpA · Tax ID 99.511.620-0</div>
-    <div class="prop-footer-right">
-      <div class="firma-line"></div>
-      Firma Representante
-    </div>
-  </div>
-  `;
+    <div class="prop-footer-right"><div class="firma-line"></div>Firma Representante</div>
+  </div>`;
 }
 
+// ── REPOSITORIO ──────────────────────────────────────────────────────────────
+const STORAGE_KEY='casetracking_proposals';
+function getProposals(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){return[];}}
+function saveProposals(arr){localStorage.setItem(STORAGE_KEY,JSON.stringify(arr));}
+
+function collectData(){
+  const ids=['am_nombre','am_correo','am_compid','am_emision','am_vencimiento',
+    'cl_nombre','cl_correo','cl_empresa','cl_rut','cl_pagos','cl_correopagos','cl_tel','cl_giro','cl_dir','cl_inicio','cl_fin','cl_modal',
+    'pr_cant','pr_prod','pr_valor','pr_impl','pr_moneda','pr_venc','pr_desc',
+    'pr2_cant','pr2_prod','pr2_valor','pr2_impl','pr2_desc','cond_det','cond_vig'];
+  const data={};
+  ids.forEach(id=>data[id]=v(id));
+  data._show2=document.getElementById('toggle2').checked;
+  return data;
+}
+
+function loadData(data){
+  Object.entries(data).forEach(([id,val])=>{
+    const el=document.getElementById(id);
+    if(el&&id!=='_show2')el.value=val;
+  });
+  document.getElementById('toggle2').checked=!!data._show2;
+  document.getElementById('second-prod').classList.toggle('visible',!!data._show2);
+  update();
+}
+
+function saveProposal(){
+  const cliente=v('cl_empresa')||v('cl_nombre');
+  if(!cliente){showToast('⚠ Ingresa al menos el nombre de la empresa');return;}
+  const proposals=getProposals();
+  const data=collectData();
+  const id=Date.now();
+  const date=new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+  proposals.unshift({id,name:cliente,date,data});
+  saveProposals(proposals);
+  showToast(`✓ Propuesta de ${cliente} guardada`);
+}
+
+function openRepo(){renderRepo();document.getElementById('modal-repo').classList.add('open');}
+function closeRepo(){document.getElementById('modal-repo').classList.remove('open');}
+
+function renderRepo(){
+  const proposals=getProposals();
+  const list=document.getElementById('repo-list');
+  if(!proposals.length){list.innerHTML='<div class="repo-empty">No hay propuestas guardadas aún.<br>Completa el formulario y haz clic en <b>Guardar propuesta</b>.</div>';return;}
+  list.innerHTML=proposals.map(p=>`
+    <div class="repo-item">
+      <div class="repo-item-info">
+        <div class="repo-item-name">${p.name}</div>
+        <div class="repo-item-meta">Guardado el ${p.date}</div>
+      </div>
+      <div class="repo-item-btns">
+        <button class="btn-load" onclick="loadProposal(${p.id})">Abrir</button>
+        <button class="btn-del" onclick="deleteProposal(${p.id})">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function loadProposal(id){
+  const p=getProposals().find(x=>x.id===id);
+  if(p){loadData(p.data);closeRepo();showToast(`✓ Propuesta de ${p.name} cargada`);}
+}
+function deleteProposal(id){saveProposals(getProposals().filter(x=>x.id!==id));renderRepo();}
+
+// ── PDF ──────────────────────────────────────────────────────────────────────
 function downloadPDF(){
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit:'mm', format:'a4' });
-  const W=210, M=15, U=W-2*M;
-  const mon = v('pr_moneda');
-  const total = calcTotal();
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const W=210,M=15,U=W-2*M;
+  const mon=v('pr_moneda');
+  const total=calcTotal(v('pr_valor'));
+  const show2=document.getElementById('toggle2').checked;
+  const total2=calcTotal(v('pr2_valor'));
 
-  // Header negro
-  doc.setFillColor(26,26,26);
-  doc.rect(0,0,W,30,'F');
-  doc.setFillColor(232,97,10);
-  doc.rect(0,0,W,2,'F');
+  doc.setFillColor(26,26,26);doc.rect(0,0,W,30,'F');
+  doc.setFillColor(232,97,10);doc.rect(0,0,W,2,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(17);doc.setTextColor(255,255,255);doc.text('Case',M,15);
+  const cw=doc.getTextWidth('Case');doc.setTextColor(232,97,10);doc.text('Tracking',M+cw,15);
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(136,136,136);doc.text('by LemonTech',M,21);
+  doc.setFontSize(8);doc.setTextColor(252,213,179);doc.text('Lemontech SpA  ·  Tax ID 99.511.620-0',W-M,12,{align:'right'});
+  doc.setTextColor(136,136,136);doc.text('Las Condes, Santiago. Chile.',W-M,18,{align:'right'});
+  doc.setTextColor(232,97,10);doc.text('www.lemontech.com',W-M,24,{align:'right'});
 
-  // Logo
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(17); doc.setTextColor(255,255,255);
-  doc.text('Case', M, 15);
-  const cw = doc.getTextWidth('Case');
-  doc.setTextColor(232,97,10);
-  doc.text('Tracking', M+cw, 15);
-  doc.setFont('helvetica','normal');
-  doc.setFontSize(8); doc.setTextColor(136,136,136);
-  doc.text('by LemonTech', M, 21);
-
-  // Header right
-  doc.setFontSize(8); doc.setTextColor(252,213,179);
-  doc.text('Lemontech SpA  ·  Tax ID 99.511.620-0', W-M, 12, {align:'right'});
-  doc.setTextColor(136,136,136);
-  doc.text('Las Condes, Santiago. Chile.', W-M, 18, {align:'right'});
-  doc.setTextColor(232,97,10);
-  doc.text('www.lemontech.com', W-M, 24, {align:'right'});
-
-  // Subheader naranja
-  doc.setFillColor(232,97,10);
-  doc.rect(0,30,W,10,'F');
-  const metas = [
-    ['Account Manager', v('am_nombre')],
-    ['Correo', v('am_correo')],
-    ['Company ID', v('am_compid')],
-    ['Emisión', fmtDate(v('am_emision'))],
-    ['Vence', fmtDate(v('am_vencimiento'))],
-  ];
-  const colW2 = U / metas.length;
-  metas.forEach(([lbl, val], i) => {
-    const x = M + i*colW2;
-    doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(255,255,255);
-    doc.text(lbl, x, 34.5);
-    doc.setFont('helvetica','normal'); doc.setTextColor(255,243,236);
-    doc.text(val||'', x, 38.5);
+  doc.setFillColor(232,97,10);doc.rect(0,30,W,10,'F');
+  const metas=[['Account Manager',v('am_nombre')],['Correo',v('am_correo')],['Company ID',v('am_compid')],['Emisión',fmtDate(v('am_emision'))],['Vence',fmtDate(v('am_vencimiento'))]];
+  const colW2=U/metas.length;
+  metas.forEach(([lbl,val],i)=>{
+    const x=M+i*colW2;
+    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(255,255,255);doc.text(lbl,x,34.5);
+    doc.setFont('helvetica','normal');doc.setTextColor(255,243,236);doc.text(val||'',x,38.5);
   });
 
-  let y = 48;
-
-  const secTitle = (txt) => {
-    doc.setDrawColor(232,97,10); doc.setLineWidth(0.8);
-    doc.line(M, y, M, y+5);
-    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(232,97,10);
-    doc.text(txt, M+4, y+4);
-    y += 9;
-  };
-
-  const fieldGrid = (pairs) => {
-    const hw = (U-3)/2;
+  let y=48;
+  const secTitle=(txt)=>{doc.setDrawColor(232,97,10);doc.setLineWidth(0.8);doc.line(M,y,M,y+5);doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(232,97,10);doc.text(txt,M+4,y+4);y+=9;};
+  const fieldGrid=(pairs)=>{
+    const hw=(U-3)/2;
     for(let i=0;i<pairs.length;i+=2){
-      const row = pairs.slice(i,i+2);
-      row.forEach((p,j) => {
-        const x = M + j*(hw+3);
-        doc.setFillColor(255,248,244); doc.setDrawColor(252,213,179); doc.setLineWidth(0.3);
-        doc.roundedRect(x, y, hw, 10, 1.5,1.5,'FD');
-        doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(232,97,10);
-        doc.text(p[0], x+3, y+4);
-        doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(26,26,26);
-        doc.text(p[1]||'—', x+3, y+8.5);
+      pairs.slice(i,i+2).forEach((p,j)=>{
+        const x=M+j*(hw+3);
+        doc.setFillColor(255,248,244);doc.setDrawColor(252,213,179);doc.setLineWidth(0.3);doc.roundedRect(x,y,hw,10,1.5,1.5,'FD');
+        doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(232,97,10);doc.text(p[0],x+3,y+4);
+        doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(26,26,26);doc.text(p[1]||'—',x+3,y+8.5);
       });
-      y += 12;
+      y+=12;
     }
-    y += 2;
+    y+=2;
   };
 
-  // Cliente
   secTitle('Información del cliente');
-  fieldGrid([
-    ['Nombre de contacto', v('cl_nombre')],
-    ['Contacto de pagos', v('cl_pagos')],
-    ['Correo', v('cl_correo')],
-    ['Correo pagos', v('cl_correopagos')],
-    ['Empresa', v('cl_empresa')],
-    ['Teléfono', v('cl_tel')],
-    ['RUT / Tax ID', v('cl_rut')],
-    ['Giro / Actividad', v('cl_giro')],
-    ['Dirección', v('cl_dir')],
-    ['Modalidad de facturación', v('cl_modal')],
-    ['Inicio suscripción', v('cl_inicio')],
-    ['Fin suscripción', v('cl_fin')],
-  ]);
+  fieldGrid([['Nombre de contacto',v('cl_nombre')],['Contacto de pagos',v('cl_pagos')],['Correo',v('cl_correo')],['Correo pagos',v('cl_correopagos')],['Empresa',v('cl_empresa')],['Teléfono',v('cl_tel')],['RUT / Tax ID',v('cl_rut')],['Giro / Actividad',v('cl_giro')],['Dirección',v('cl_dir')],['Modalidad de facturación',v('cl_modal')],['Inicio suscripción',v('cl_inicio')],['Fin suscripción',v('cl_fin')]]);
 
-  // Productos
-  secTitle('Productos');
-  const cols = [42,48,28,28,24];
-  const heads = ['Cantidad','Producto / Add-on','Valor mensual','Implementación','Moneda'];
-  doc.setFillColor(255,240,230); doc.setDrawColor(252,213,179); doc.setLineWidth(0.3);
-  doc.rect(M,y,U,8,'FD');
+  secTitle(show2?'Productos — Doble cotización':'Productos');
+
+  const addDescBox=(lbl,txt)=>{
+    if(!txt)return;
+    const lines=doc.splitTextToSize(txt,U-10);
+    const h=Math.max(10,6+lines.length*4.5);
+    doc.setFillColor(255,248,244);doc.setDrawColor(252,213,179);doc.setLineWidth(0.3);doc.rect(M,y,U,h,'FD');
+    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(232,97,10);doc.text(lbl,M+3,y+4);
+    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(122,46,0);doc.text(lines,M+3,y+8.5);
+    y+=h+2;
+  };
+  addDescBox(show2?'DESCRIPCIÓN OPCIÓN 1':'DESCRIPCIÓN',v('pr_desc'));
+  if(show2)addDescBox('DESCRIPCIÓN OPCIÓN 2',v('pr2_desc'));
+
+  const cols=[42,48,28,28,24];
+  const heads=['Cantidad','Producto / Add-on','Valor mensual','Implementación','Moneda'];
+  doc.setFillColor(255,240,230);doc.setDrawColor(252,213,179);doc.setLineWidth(0.3);doc.rect(M,y,U,8,'FD');
   let cx=M;
-  heads.forEach((h,i)=>{
-    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(122,46,0);
-    doc.text(h, cx+2, y+5.5); cx+=cols[i];
-  });
+  heads.forEach((h,i)=>{doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(122,46,0);doc.text(h,cx+2,y+5.5);cx+=cols[i];});
   y+=8;
-  const pvals=[v('pr_cant'), v('pr_prod'), fmtNum(v('pr_valor')), v('pr_impl'), mon];
-  doc.setFillColor(255,255,255); doc.rect(M,y,U,8,'FD');
-  cx=M;
-  pvals.forEach((val,i)=>{
-    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(26,26,26);
-    doc.text(val||'—', cx+2, y+5.5); cx+=cols[i];
-  });
-  y+=11;
-
-  // Totales
-  doc.setFillColor(26,26,26);
-  doc.roundedRect(W-M-65, y, 65, 8, 2,2,'F');
-  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(252,213,179);
-  doc.text(`Valor total anual: ${total} ${mon}`, W-M-3, y+5.5, {align:'right'});
+  const pvals=[v('pr_cant'),v('pr_prod'),fmtNum(v('pr_valor')),v('pr_impl'),mon];
+  doc.setFillColor(255,255,255);doc.rect(M,y,U,8,'FD');cx=M;
+  pvals.forEach((val,i)=>{doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(26,26,26);doc.text(val||'—',cx+2,y+5.5);cx+=cols[i];});
+  y+=8;
+  if(show2){
+    const pvals2=[v('pr2_cant'),v('pr2_prod'),fmtNum(v('pr2_valor')),v('pr2_impl'),mon];
+    doc.setFillColor(255,250,247);doc.rect(M,y,U,8,'FD');cx=M;
+    pvals2.forEach((val,i)=>{doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(26,26,26);doc.text(val||'—',cx+2,y+5.5);cx+=cols[i];});
+    y+=8;
+  }
+  y+=2;
+  doc.setFillColor(26,26,26);doc.roundedRect(W-M-70,y,70,8,2,2,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(252,213,179);
+  doc.text(`${show2?'Op.1 — ':''}Total anual: ${total} ${mon}`,W-M-3,y+5.5,{align:'right'});
   y+=10;
-  doc.setFillColor(232,97,10);
-  doc.roundedRect(W-M-65, y, 65, 8, 2,2,'F');
-  doc.setTextColor(255,255,255);
-  doc.text(`Valor mensual: ${fmtNum(v('pr_valor'))} ${mon}`, W-M-3, y+5.5, {align:'right'});
-  y+=14;
+  doc.setFillColor(232,97,10);doc.roundedRect(W-M-70,y,70,8,2,2,'F');
+  doc.setTextColor(255,255,255);doc.text(`${show2?'Op.1 — ':''}Mensual: ${fmtNum(v('pr_valor'))} ${mon}`,W-M-3,y+5.5,{align:'right'});
+  y+=10;
+  if(show2){
+    doc.setFillColor(60,30,10);doc.roundedRect(W-M-70,y,70,8,2,2,'F');
+    doc.setTextColor(252,213,179);doc.text(`Op.2 — Total anual: ${total2} ${mon}`,W-M-3,y+5.5,{align:'right'});
+    y+=10;
+    doc.setFillColor(255,154,60);doc.roundedRect(W-M-70,y,70,8,2,2,'F');
+    doc.setTextColor(255,255,255);doc.text(`Op.2 — Mensual: ${fmtNum(v('pr2_valor'))} ${mon}`,W-M-3,y+5.5,{align:'right'});
+    y+=10;
+  }
+  y+=4;
 
-  // Condiciones particulares
   secTitle('Condiciones particulares');
-  const condItems = [
-    ['Detalle condición particular', v('cond_det')],
-    ['Vigencia condición particular', v('cond_vig')],
-  ];
-  condItems.forEach(([lbl, val]) => {
-    doc.setFillColor(255,240,230); doc.setDrawColor(252,213,179); doc.setLineWidth(0.3);
-    doc.rect(M, y, U, 10, 'FD');
-    doc.setDrawColor(232,97,10); doc.setLineWidth(1.5);
-    doc.line(M, y, M, y+10);
-    doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(232,97,10);
-    doc.text(lbl, M+4, y+4.5);
-    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(122,46,0);
-    doc.text(val||'—', M+4, y+8.5);
-    y+=12;
+  const condItems=[['Detalle condición particular',v('cond_det')],['Vigencia condición particular',v('cond_vig')]];
+  condItems.forEach(([lbl,val])=>{
+    doc.setFillColor(255,240,230);doc.setDrawColor(252,213,179);doc.setLineWidth(0.3);doc.rect(M,y,U,10,'FD');
+    doc.setDrawColor(232,97,10);doc.setLineWidth(1.5);doc.line(M,y,M,y+10);
+    doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(232,97,10);doc.text(lbl,M+4,y+4.5);
+    doc.setFontSize(9);doc.setTextColor(122,46,0);doc.text(val||'—',M+4,y+8.5);y+=12;
   });
   y+=3;
 
-  // Términos
   secTitle('Términos y condiciones');
-  const legales = [
-    ['1.','Aceptación de la propuesta','La suscripción mediante firma implica la aceptación del servicio y Términos y Condiciones.'],
-    ['2.','Términos y condiciones','recursos.lemontech.com/hubfs/Archivos-legales/ACUERDO-MARCO-DE-SERVICIOS-DE-LEMONTECH.pdf'],
-    ['3.','Aviso de privacidad','recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf'],
-    ['4.','Encargo Tratamiento de datos','recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf'],
-  ];
+  const legales=[['1.','Aceptación de la propuesta','La suscripción mediante firma implica la aceptación del servicio y Términos y Condiciones.'],['2.','Términos y condiciones','recursos.lemontech.com/hubfs/Archivos-legales/ACUERDO-MARCO-DE-SERVICIOS-DE-LEMONTECH.pdf'],['3.','Aviso de privacidad','recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf'],['4.','Encargo Tratamiento de datos','recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf']];
   legales.forEach(([n,t,d],i)=>{
-    doc.setFillColor(i%2===0?255:255, i%2===0?248:255, i%2===0?244:255);
-    doc.rect(M,y,U,10,'F');
-    doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(232,97,10);
-    doc.text(n, M+3, y+4.5);
-    doc.setTextColor(26,26,26);
-    doc.text(t, M+11, y+4.5);
-    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(107,114,128);
-    doc.text(d, M+11, y+8.5);
+    doc.setFillColor(i%2===0?255:255,i%2===0?248:255,i%2===0?244:255);doc.rect(M,y,U,10,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(232,97,10);doc.text(n,M+3,y+4.5);
+    doc.setTextColor(26,26,26);doc.text(t,M+11,y+4.5);
+    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(107,114,128);doc.text(d,M+11,y+8.5);
     y+=11;
   });
 
-  y+=6;
-  doc.setDrawColor(252,213,179); doc.setLineWidth(0.4);
-  doc.line(M, y, W-M, y);
-  y+=6;
-  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(232,97,10);
-  doc.text('Lemontech SpA  ·  Tax ID 99.511.620-0', M, y+3);
-  doc.setTextColor(107,114,128);
-  doc.line(W-M-55, y+6, W-M, y+6);
-  doc.setFont('helvetica','bold');
-  doc.text('Firma Representante', W-M-27, y+11, {align:'center'});
-
+  y+=6;doc.setDrawColor(252,213,179);doc.setLineWidth(0.4);doc.line(M,y,W-M,y);y+=6;
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(232,97,10);doc.text('Lemontech SpA  ·  Tax ID 99.511.620-0',M,y+3);
+  doc.setTextColor(107,114,128);doc.line(W-M-55,y+6,W-M,y+6);doc.setFont('helvetica','bold');doc.text('Firma Representante',W-M-27,y+11,{align:'center'});
   doc.save(`CaseTracking_Propuesta_${v('cl_empresa')||'Cliente'}.pdf`);
 }
 
