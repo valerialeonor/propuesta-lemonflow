@@ -392,9 +392,6 @@ function update(){
     <td><span class="badge-gratis">${v('pr2_impl')||'—'}</span></td><td>${mon}</td>
   </tr>`:'';
 
-  const descBlock=desc?`<div class="prop-desc"><span class="prop-desc-lbl">${show2?'DESCRIPCIÓN OPCIÓN 1':'DESCRIPCIÓN'}</span>${desc}</div>`:'';
-  const desc2Block=(show2&&desc2)?`<div class="prop-desc"><span class="prop-desc-lbl">DESCRIPCIÓN OPCIÓN 2</span>${desc2}</div>`:'';
-
   let totales=`<div class="prop-total-box">${show2?'Opción 1 — ':''}Valor total anual &nbsp; ${total} ${mon}</div>
     <div class="prop-total-box" style="background:#E8610A;color:#fff;">${show2?'Opción 1 — ':''}Valor mensual &nbsp; ${fmtNum(v('pr_valor'))} ${mon}</div>`;
   if(show2) totales+=`<div class="prop-total-box alt">Opción 2 — Valor total anual &nbsp; ${total2} ${mon}</div>

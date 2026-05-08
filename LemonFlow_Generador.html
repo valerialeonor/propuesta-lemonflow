@@ -314,9 +314,6 @@ function update(){
   const totalBoxes=`<div class="prop-total-box">${show2?'Opción 1 — ':''}Total anual: ${total} ${mon}</div>`
     +(show2?`<div class="prop-total-box alt">Opción 2 — Total anual: ${total2} ${mon}</div>`:'');
 
-  const descBlock=desc?`<div class="prop-desc"><span class="prop-desc-lbl">${show2?'DESCRIPCIÓN OPCIÓN 1':'DESCRIPCIÓN'}</span>${desc}</div>`:'';
-  const desc2Block=(show2&&desc2)?`<div class="prop-desc"><span class="prop-desc-lbl">DESCRIPCIÓN OPCIÓN 2</span>${desc2}</div>`:'';
-
   document.getElementById('propuesta').innerHTML=`
   <div class="prop-header">
     <div class="prop-topbar"></div>
