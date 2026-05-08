@@ -380,22 +380,27 @@ function update(){
   const otro2On=document.getElementById('addon2_otro')?.checked;
   ['box2_otro','box2_otro2'].forEach(b=>{const el=document.getElementById(b);if(el)el.style.display=otro2On?'flex':'none';});
   const mon=v('pr_moneda');
-  const total=calcTotal(v('pr_valor'));
   const show2=document.getElementById('toggle2').checked;
-  const total2=calcTotal(v('pr2_valor'));
   const addons1=getAddons('');
   const addons2=getAddons('2');
+
+  // Total opción 1 = producto + add-ons
+  const totalBase1=(parseFloat(v('pr_valor'))||0)+addons1.reduce((s,a)=>s+(parseFloat(a.valor)||0),0);
+  const total1Anual=(totalBase1*12).toLocaleString('es-CL');
+
+  // Total opción 2 = producto2 + add-ons2
+  const totalBase2=(parseFloat(v('pr2_valor'))||0)+addons2.reduce((s,a)=>s+(parseFloat(a.valor)||0),0);
+  const total2Anual=(totalBase2*12).toLocaleString('es-CL');
 
   const prod2Row=show2?`<tr style="background:#fffaf7;">
     <td>${v('pr2_cant')||'—'}</td><td>${v('pr2_prod')||'—'}</td>
     <td>${fmtNum(v('pr2_valor'))}</td>
-    <td><span class="badge-gratis">${v('pr2_impl')||'—'}</span></td><td>${mon}</td>
+    <td><span class="badge-gratis">${v('pr2_impl')||'—'}</span></td>
+    <td>${fmtDate(v('pr_venc'))}</td><td>${mon}</td>
   </tr>`:'';
 
-  let totales=`<div class="prop-total-box">${show2?'Opción 1 — ':''}Valor total anual &nbsp; ${total} ${mon}</div>
-    <div class="prop-total-box" style="background:#E8610A;color:#fff;">${show2?'Opción 1 — ':''}Valor mensual &nbsp; ${fmtNum(v('pr_valor'))} ${mon}</div>`;
-  if(show2) totales+=`<div class="prop-total-box alt">Opción 2 — Valor total anual &nbsp; ${total2} ${mon}</div>
-    <div class="prop-total-box" style="background:#FF9A3C;color:#fff;">Opción 2 — Valor mensual &nbsp; ${fmtNum(v('pr2_valor'))} ${mon}</div>`;
+  let totales=`<div class="prop-total-box">${show2?'Opción 1 — ':''}Total anual: ${total1Anual} ${mon}</div>`;
+  if(show2) totales+=`<div class="prop-total-box alt">Opción 2 — Total anual: ${total2Anual} ${mon}</div>`;
 
   document.getElementById('propuesta').innerHTML=`
   <div class="prop-header">
@@ -433,12 +438,13 @@ function update(){
     <div class="prop-section">
       <div class="prop-sec-title">Productos${show2?' — Doble cotización':''}</div>
       <table class="prop-table">
-        <thead><tr><th>Cantidad</th><th>Producto / Add-on</th><th>Valor mensual</th><th>Implementación</th><th>Moneda</th></tr></thead>
+        <thead><tr><th>Cantidad</th><th>Producto / Add-on</th><th>Valor mensual</th><th>Implementación</th><th>Vencimiento</th><th>Moneda</th></tr></thead>
         <tbody>
           <tr>
             <td>${v('pr_cant')||'—'}</td><td>${v('pr_prod')||'—'}</td>
             <td>${fmtNum(v('pr_valor'))}</td>
-            <td><span class="badge-gratis">${v('pr_impl')||'—'}</span></td><td>${mon}</td>
+            <td><span class="badge-gratis">${v('pr_impl')||'—'}</span></td>
+            <td>${fmtDate(v('pr_venc'))}</td><td>${mon}</td>
           </tr>
           ${prod2Row}
         </tbody>
@@ -483,7 +489,11 @@ function update(){
 }
 
 // ── REPOSITORIO ──────────────────────────────────────────────────────────────
-const SHEETS_URL='https://script.google.com/a/macros/lemontech.com/s/AKfycbyHOYany7ng5eYhjqMXQVQAhWy-J2nejUWafdbl0iZJa60ii4JtOXYFB3ua1_i8PSeKXA/exec';
+const AIRTABLE_TOKEN='pattjA7c4qzJLDu6w.d1e4c13c204d68c51159496b43875db3929fd52da035cbdc777e710c25467647';
+const AIRTABLE_BASE='appvTKWIxlHHMYZYL';
+const AIRTABLE_TABLE='tbltMHpCsP81xRuml';
+const AIRTABLE_URL=`https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}`;
+const AIRTABLE_HEADERS={'Authorization':'Bearer '+AIRTABLE_TOKEN,'Content-Type':'application/json'};
 const STORAGE_KEY='casetracking_proposals';
 function getProposals(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){return[];}}
 function saveProposalsLocal(arr){localStorage.setItem(STORAGE_KEY,JSON.stringify(arr));}
@@ -491,21 +501,51 @@ function saveProposalsLocal(arr){localStorage.setItem(STORAGE_KEY,JSON.stringify
 function collectData(){
   const ids=['am_nombre','am_correo','am_compid','am_emision','am_vencimiento',
     'cl_nombre','cl_correo','cl_empresa','cl_rut','cl_pagos','cl_correopagos','cl_tel','cl_giro','cl_dir','cl_inicio','cl_fin','cl_modal',
-    'pr_cant','pr_prod','pr_valor','pr_impl','pr_moneda','pr_venc','pr_desc',
-    'pr2_cant','pr2_prod','pr2_valor','pr2_impl','pr2_desc','cond_det','cond_vig'];
+    'pr_cant','pr_prod','pr_valor','pr_impl','pr_moneda','pr_venc',
+    'pr2_cant','pr2_prod','pr2_valor','pr2_impl','cond_det','cond_vig'];
   const data={};
   ids.forEach(id=>data[id]=v(id));
   data._show2=document.getElementById('toggle2').checked;
+  data._addon_vig=document.getElementById('addon_vig')?.checked||false;
+  data._addon_vig_val=v('addon_vig_val');
+  data._addon_lia=document.getElementById('addon_lia')?.checked||false;
+  data._addon_lia_val=v('addon_lia_val');
+  data._addon_otro=document.getElementById('addon_otro')?.checked||false;
+  data._addon_otro_nom=v('addon_otro_nom');
+  data._addon_otro_val=v('addon_otro_val');
+  data._addon2_vig=document.getElementById('addon2_vig')?.checked||false;
+  data._addon2_vig_val=v('addon2_vig_val');
+  data._addon2_lia=document.getElementById('addon2_lia')?.checked||false;
+  data._addon2_lia_val=v('addon2_lia_val');
+  data._addon2_otro=document.getElementById('addon2_otro')?.checked||false;
+  data._addon2_otro_nom=v('addon2_otro_nom');
+  data._addon2_otro_val=v('addon2_otro_val');
   return data;
 }
 
 function loadData(data){
   Object.entries(data).forEach(([id,val])=>{
+    if(id.startsWith('_'))return;
     const el=document.getElementById(id);
-    if(el&&id!=='_show2')el.value=val;
+    if(el)el.value=val;
   });
   document.getElementById('toggle2').checked=!!data._show2;
   document.getElementById('second-prod').classList.toggle('visible',!!data._show2);
+  // Restaurar addons
+  ['vig','lia','otro'].forEach(a=>{
+    const cb=document.getElementById('addon_'+a);
+    if(cb){cb.checked=!!data['_addon_'+a];['box_'+a,'box_'+a+'2'].forEach(b=>{const el=document.getElementById(b);if(el)el.style.display=cb.checked?'flex':'none';});}
+    const cb2=document.getElementById('addon2_'+a);
+    if(cb2){cb2.checked=!!data['_addon2_'+a];['box2_'+a,'box2_'+a+'2'].forEach(b=>{const el=document.getElementById(b);if(el)el.style.display=cb2.checked?'flex':'none';});}
+  });
+  if(data._addon_vig_val)document.getElementById('addon_vig_val').value=data._addon_vig_val;
+  if(data._addon_lia_val)document.getElementById('addon_lia_val').value=data._addon_lia_val;
+  if(data._addon_otro_nom)document.getElementById('addon_otro_nom').value=data._addon_otro_nom;
+  if(data._addon_otro_val)document.getElementById('addon_otro_val').value=data._addon_otro_val;
+  if(data._addon2_vig_val)document.getElementById('addon2_vig_val').value=data._addon2_vig_val;
+  if(data._addon2_lia_val)document.getElementById('addon2_lia_val').value=data._addon2_lia_val;
+  if(data._addon2_otro_nom)document.getElementById('addon2_otro_nom').value=data._addon2_otro_nom;
+  if(data._addon2_otro_val)document.getElementById('addon2_otro_val').value=data._addon2_otro_val;
   update();
 }
 
@@ -518,19 +558,31 @@ async function saveProposal(){
   const data=collectData();
   const nombre_propuesta=`${cliente} - CaseTracking`;
   data.nombre_propuesta=nombre_propuesta;
+  const date=new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
 
   const proposals=getProposals();
   const id=Date.now();
-  const date=new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
   proposals.unshift({id,name:nombre_propuesta,date,data});
   saveProposalsLocal(proposals);
 
   showToast('💾 Guardando en la nube...');
   try{
-    await fetch(SHEETS_URL,{method:'POST',body:JSON.stringify(data)});
-    showToast(`✓ "${nombre_propuesta}" guardada en la nube`);
+    const res=await fetch(AIRTABLE_URL,{
+      method:'POST',
+      headers:AIRTABLE_HEADERS,
+      body:JSON.stringify({fields:{
+        'Nombre':nombre_propuesta,
+        'AE':am,
+        'Cliente':cliente,
+        'Fecha':date,
+        'Producto':'CaseTracking',
+        'Datos':JSON.stringify(data)
+      }})
+    });
+    if(res.ok){showToast(`✓ "${nombre_propuesta}" guardada en la nube`);}
+    else{showToast(`✓ Guardada localmente`);}
   }catch(e){
-    showToast(`✓ Guardada localmente (sin conexión a la nube)`);
+    showToast(`✓ Guardada localmente (sin conexión)`);
   }
 }
 
@@ -544,19 +596,24 @@ async function renderRepo(){
 
   if(am){
     try{
-      const res=await fetch(`${SHEETS_URL}?am=${encodeURIComponent(am)}`);
+      const url=`${AIRTABLE_URL}?filterByFormula=AND({AE}="${am}",{Producto}="CaseTracking")&sort[0][field]=Fecha&sort[0][direction]=desc`;
+      const res=await fetch(url,{headers:AIRTABLE_HEADERS});
       const json=await res.json();
-      if(json.proposals&&json.proposals.length){
-        list.innerHTML=json.proposals.map((p)=>`
-          <div class="repo-item">
+      if(json.records&&json.records.length){
+        list.innerHTML=json.records.map(r=>{
+          const f=r.fields;
+          const data=JSON.parse(f.Datos||'{}');
+          return `<div class="repo-item">
             <div class="repo-item-info">
-              <div class="repo-item-name">${p.nombre}</div>
-              <div class="repo-item-meta">☁️ Guardado el ${p.fecha}</div>
+              <div class="repo-item-name">${f.Nombre||'—'}</div>
+              <div class="repo-item-meta">☁️ Guardado el ${f.Fecha||''}</div>
             </div>
             <div class="repo-item-btns">
-              <button class="btn-load" onclick='loadCloudProposal(${JSON.stringify(p.data).replace(/'/g,"&#39;")})'>Abrir</button>
+              <button class="btn-load" onclick='loadCloudProposal(${JSON.stringify(data).replace(/'/g,"&#39;")})'>Abrir</button>
+              <button class="btn-del" onclick="deleteAirtable('${r.id}')">✕</button>
             </div>
-          </div>`).join('');
+          </div>`;
+        }).join('');
         return;
       }
     }catch(e){}
@@ -564,7 +621,7 @@ async function renderRepo(){
 
   const proposals=getProposals();
   if(!proposals.length){
-    list.innerHTML=`<div class="repo-empty">${am?'No hay propuestas guardadas para <b>'+am+'</b>.':'Ingresa tu nombre de AM para ver tus propuestas.'}<br>Completa el formulario y haz clic en <b>Guardar propuesta</b>.</div>`;
+    list.innerHTML=`<div class="repo-empty">${am?'No hay propuestas para <b>'+am+'</b>.':'Ingresa tu nombre de AM primero.'}<br>Completa el formulario y haz clic en <b>Guardar propuesta</b>.</div>`;
     return;
   }
   list.innerHTML=proposals.map(p=>`
@@ -581,12 +638,14 @@ async function renderRepo(){
 }
 
 function loadCloudProposal(data){loadData(data);closeRepo();showToast(`✓ Propuesta cargada desde la nube`);}
-
-function loadProposal(id){
-  const p=getProposals().find(x=>x.id===id);
-  if(p){loadData(p.data);closeRepo();showToast(`✓ Propuesta cargada`);}
-}
+function loadProposal(id){const p=getProposals().find(x=>x.id===id);if(p){loadData(p.data);closeRepo();showToast(`✓ Propuesta cargada`);}}
 function deleteProposal(id){saveProposalsLocal(getProposals().filter(x=>x.id!==id));renderRepo();}
+async function deleteAirtable(id){
+  try{
+    await fetch(`${AIRTABLE_URL}/${id}`,{method:'DELETE',headers:AIRTABLE_HEADERS});
+    renderRepo();showToast('✓ Propuesta eliminada');
+  }catch(e){showToast('Error al eliminar');}
+}
 
 // ── PDF ──────────────────────────────────────────────────────────────────────
 function downloadPDF(){
@@ -637,51 +696,60 @@ function downloadPDF(){
 
   secTitle(show2?'Productos — Doble cotización':'Productos');
 
-  const addDescBox=(lbl,txt)=>{
-    if(!txt)return;
-    const lines=doc.splitTextToSize(txt,U-10);
-    const h=Math.max(10,6+lines.length*4.5);
-    doc.setFillColor(255,248,244);doc.setDrawColor(252,213,179);doc.setLineWidth(0.3);doc.rect(M,y,U,h,'FD');
-    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(232,97,10);doc.text(lbl,M+3,y+4);
-    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(122,46,0);doc.text(lines,M+3,y+8.5);
-    y+=h+2;
-  };
-  addDescBox(show2?'DESCRIPCIÓN OPCIÓN 1':'DESCRIPCIÓN',v('pr_desc'));
-  if(show2)addDescBox('DESCRIPCIÓN OPCIÓN 2',v('pr2_desc'));
+  const addons1pdf=getAddons('');
+  const addons2pdf=getAddons('2');
+  const totalBase1pdf=(parseFloat(v('pr_valor'))||0)+addons1pdf.reduce((s,a)=>s+(parseFloat(a.valor)||0),0);
+  const total1pdf=(totalBase1pdf*12).toLocaleString('es-CL');
+  const totalBase2pdf=(parseFloat(v('pr2_valor'))||0)+addons2pdf.reduce((s,a)=>s+(parseFloat(a.valor)||0),0);
+  const total2pdf=(totalBase2pdf*12).toLocaleString('es-CL');
 
-  const cols=[42,48,28,28,24];
-  const heads=['Cantidad','Producto / Add-on','Valor mensual','Implementación','Moneda'];
+  const cols=[38,44,25,25,28,20];
+  const heads=['Cantidad','Producto / Add-on','Valor mensual','Implementación','Vencimiento','Moneda'];
   doc.setFillColor(255,240,230);doc.setDrawColor(252,213,179);doc.setLineWidth(0.3);doc.rect(M,y,U,8,'FD');
   let cx=M;
-  heads.forEach((h,i)=>{doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(122,46,0);doc.text(h,cx+2,y+5.5);cx+=cols[i];});
+  heads.forEach((h,i)=>{doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(122,46,0);doc.text(h,cx+2,y+5.5);cx+=cols[i];});
   y+=8;
-  const pvals=[v('pr_cant'),v('pr_prod'),fmtNum(v('pr_valor')),v('pr_impl'),mon];
+  const pvals=[v('pr_cant'),v('pr_prod'),fmtNum(v('pr_valor')),v('pr_impl'),fmtDate(v('pr_venc')),mon];
   doc.setFillColor(255,255,255);doc.rect(M,y,U,8,'FD');cx=M;
-  pvals.forEach((val,i)=>{doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(26,26,26);doc.text(val||'—',cx+2,y+5.5);cx+=cols[i];});
+  pvals.forEach((val,i)=>{doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(26,26,26);doc.text(val||'—',cx+2,y+5.5);cx+=cols[i];});
   y+=8;
   if(show2){
-    const pvals2=[v('pr2_cant'),v('pr2_prod'),fmtNum(v('pr2_valor')),v('pr2_impl'),mon];
+    const pvals2=[v('pr2_cant'),v('pr2_prod'),fmtNum(v('pr2_valor')),v('pr2_impl'),fmtDate(v('pr_venc')),mon];
     doc.setFillColor(255,250,247);doc.rect(M,y,U,8,'FD');cx=M;
-    pvals2.forEach((val,i)=>{doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(26,26,26);doc.text(val||'—',cx+2,y+5.5);cx+=cols[i];});
+    pvals2.forEach((val,i)=>{doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(26,26,26);doc.text(val||'—',cx+2,y+5.5);cx+=cols[i];});
     y+=8;
   }
+
+  // Add-ons en PDF
+  const addAddonsPDF=(addons,label)=>{
+    if(!addons.length)return;
+    doc.setFillColor(255,248,244);doc.setDrawColor(252,213,179);doc.setLineWidth(0.3);
+    const h=7+addons.length*7;
+    doc.rect(M,y,U,h,'FD');
+    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(232,97,10);doc.text(label,M+3,y+4);
+    let ay=y+6;
+    addons.forEach((a,i)=>{
+      doc.setFillColor(i%2===0?255:255,i%2===0?248:252,i%2===0?244:246);doc.rect(M,ay,U,7,'F');
+      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(26,26,26);
+      doc.text(a.nombre,M+3,ay+5);
+      doc.setFont('helvetica','bold');doc.text(fmtNum(a.valor)+' '+mon,W-M-3,ay+5,{align:'right'});
+      ay+=7;
+    });
+    y=ay+2;
+  };
+  addAddonsPDF(addons1pdf,show2?'ADD-ONS — OPCIÓN 1':'ADD-ONS');
+  if(show2)addAddonsPDF(addons2pdf,'ADD-ONS — OPCIÓN 2');
+
   y+=2;
   doc.setFillColor(26,26,26);doc.roundedRect(W-M-70,y,70,8,2,2,'F');
   doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(252,213,179);
-  doc.text(`${show2?'Op.1 — ':''}Total anual: ${total} ${mon}`,W-M-3,y+5.5,{align:'right'});
-  y+=10;
-  doc.setFillColor(232,97,10);doc.roundedRect(W-M-70,y,70,8,2,2,'F');
-  doc.setTextColor(255,255,255);doc.text(`${show2?'Op.1 — ':''}Mensual: ${fmtNum(v('pr_valor'))} ${mon}`,W-M-3,y+5.5,{align:'right'});
+  doc.text((show2?'Op.1 — ':'')+`Total anual: ${total1pdf} ${mon}`,W-M-3,y+5.5,{align:'right'});
   y+=10;
   if(show2){
-    doc.setFillColor(60,30,10);doc.roundedRect(W-M-70,y,70,8,2,2,'F');
-    doc.setTextColor(252,213,179);doc.text(`Op.2 — Total anual: ${total2} ${mon}`,W-M-3,y+5.5,{align:'right'});
-    y+=10;
-    doc.setFillColor(255,154,60);doc.roundedRect(W-M-70,y,70,8,2,2,'F');
-    doc.setTextColor(255,255,255);doc.text(`Op.2 — Mensual: ${fmtNum(v('pr2_valor'))} ${mon}`,W-M-3,y+5.5,{align:'right'});
+    doc.setFillColor(232,97,10);doc.roundedRect(W-M-70,y,70,8,2,2,'F');
+    doc.setTextColor(255,255,255);doc.text(`Op.2 — Total anual: ${total2pdf} ${mon}`,W-M-3,y+5.5,{align:'right'});
     y+=10;
   }
-  y+=4;
 
   secTitle('Condiciones particulares');
   const condItems=[['Detalle condición particular',v('cond_det')],['Vigencia condición particular',v('cond_vig')]];

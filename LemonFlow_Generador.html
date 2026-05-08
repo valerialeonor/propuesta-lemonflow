@@ -380,7 +380,11 @@ function update(){
 }
 
 // ── REPOSITORIO ──────────────────────────────────────────────────────────────
-const SHEETS_URL='https://script.google.com/a/macros/lemontech.com/s/AKfycbyHOYany7ng5eYhjqMXQVQAhWy-J2nejUWafdbl0iZJa60ii4JtOXYFB3ua1_i8PSeKXA/exec';
+const AIRTABLE_TOKEN='pattjA7c4qzJLDu6w.d1e4c13c204d68c51159496b43875db3929fd52da035cbdc777e710c25467647';
+const AIRTABLE_BASE='appvTKWIxlHHMYZYL';
+const AIRTABLE_TABLE='tbltMHpCsP81xRuml';
+const AIRTABLE_URL=`https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}`;
+const AIRTABLE_HEADERS={'Authorization':'Bearer '+AIRTABLE_TOKEN,'Content-Type':'application/json'};
 const STORAGE_KEY='lemonflow_proposals';
 
 function getProposals(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){return[];}}
@@ -419,21 +423,33 @@ async function saveProposal(){
   const data=collectData();
   const nombre_propuesta=`${cliente} - LemonFlow`;
   data.nombre_propuesta=nombre_propuesta;
+  const date=new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
 
   // Guardar local
   const proposals=getProposals();
   const id=Date.now();
-  const date=new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
   proposals.unshift({id,name:nombre_propuesta,date,data});
   saveProposalsLocal(proposals);
 
-  // Guardar en Google Sheets
+  // Guardar en Airtable
   showToast('💾 Guardando en la nube...');
   try{
-    await fetch(SHEETS_URL,{method:'POST',body:JSON.stringify(data)});
-    showToast(`✓ "${nombre_propuesta}" guardada en la nube`);
+    const res=await fetch(AIRTABLE_URL,{
+      method:'POST',
+      headers:AIRTABLE_HEADERS,
+      body:JSON.stringify({fields:{
+        'Nombre':nombre_propuesta,
+        'AE':am,
+        'Cliente':cliente,
+        'Fecha':date,
+        'Producto':'LemonFlow',
+        'Datos':JSON.stringify(data)
+      }})
+    });
+    if(res.ok){showToast(`✓ "${nombre_propuesta}" guardada en la nube`);}
+    else{showToast(`✓ Guardada localmente`);}
   }catch(e){
-    showToast(`✓ Guardada localmente (sin conexión a la nube)`);
+    showToast(`✓ Guardada localmente (sin conexión)`);
   }
 }
 
@@ -445,31 +461,35 @@ async function renderRepo(){
   const am=v('am_nombre');
   list.innerHTML='<div class="repo-empty">Cargando propuestas...</div>';
 
-  // Intentar cargar desde Google Sheets
   if(am){
     try{
-      const res=await fetch(`${SHEETS_URL}?am=${encodeURIComponent(am)}`);
+      const url=`${AIRTABLE_URL}?filterByFormula=AND({AE}="${am}",{Producto}="LemonFlow")&sort[0][field]=Fecha&sort[0][direction]=desc`;
+      const res=await fetch(url,{headers:AIRTABLE_HEADERS});
       const json=await res.json();
-      if(json.proposals&&json.proposals.length){
-        list.innerHTML=json.proposals.map((p,i)=>`
-          <div class="repo-item">
+      if(json.records&&json.records.length){
+        list.innerHTML=json.records.map(r=>{
+          const f=r.fields;
+          const data=JSON.parse(f.Datos||'{}');
+          return `<div class="repo-item">
             <div class="repo-item-info">
-              <div class="repo-item-name">${p.nombre}</div>
-              <div class="repo-item-meta">☁️ Guardado el ${p.fecha}</div>
+              <div class="repo-item-name">${f.Nombre||'—'}</div>
+              <div class="repo-item-meta">☁️ Guardado el ${f.Fecha||''}</div>
             </div>
             <div class="repo-item-btns">
-              <button class="btn-load" onclick='loadCloudProposal(${JSON.stringify(p.data).replace(/'/g,"&#39;")})'>Abrir</button>
+              <button class="btn-load" onclick='loadCloudProposal(${JSON.stringify(data).replace(/'/g,"&#39;")})'>Abrir</button>
+              <button class="btn-del" onclick="deleteAirtable('${r.id}')">✕</button>
             </div>
-          </div>`).join('');
+          </div>`;
+        }).join('');
         return;
       }
     }catch(e){}
   }
 
-  // Fallback a local
+  // Fallback local
   const proposals=getProposals();
   if(!proposals.length){
-    list.innerHTML=`<div class="repo-empty">${am?'No hay propuestas guardadas para <b>'+am+'</b>.':'Ingresa tu nombre de AM para ver tus propuestas.'}<br>Completa el formulario y haz clic en <b>Guardar propuesta</b>.</div>`;
+    list.innerHTML=`<div class="repo-empty">${am?'No hay propuestas para <b>'+am+'</b>.':'Ingresa tu nombre de AM primero.'}<br>Completa el formulario y haz clic en <b>Guardar propuesta</b>.</div>`;
     return;
   }
   list.innerHTML=proposals.map(p=>`
@@ -486,15 +506,13 @@ async function renderRepo(){
 }
 
 function loadCloudProposal(data){loadData(data);closeRepo();showToast(`✓ Propuesta cargada desde la nube`);}
-
-function loadProposal(id){
-  const p=getProposals().find(x=>x.id===id);
-  if(p){loadData(p.data);closeRepo();showToast(`✓ Propuesta de ${p.name} cargada`);}
-}
-
-function deleteProposal(id){
-  saveProposalsLocal(getProposals().filter(x=>x.id!==id));
-  renderRepo();
+function loadProposal(id){const p=getProposals().find(x=>x.id===id);if(p){loadData(p.data);closeRepo();showToast(`✓ Propuesta cargada`);}}
+function deleteProposal(id){saveProposalsLocal(getProposals().filter(x=>x.id!==id));renderRepo();}
+async function deleteAirtable(id){
+  try{
+    await fetch(`${AIRTABLE_URL}/${id}`,{method:'DELETE',headers:AIRTABLE_HEADERS});
+    renderRepo();showToast('✓ Propuesta eliminada');
+  }catch(e){showToast('Error al eliminar');}
 }
 
 // ── PDF ──────────────────────────────────────────────────────────────────────
@@ -547,31 +565,41 @@ function downloadPDF(){
 
   secTitle(show2?'Productos — Doble cotización':'Productos');
 
-  // Descripciones
-  const addDescBox=(lbl,txt)=>{
-    if(!txt)return;
-    const lines=doc.splitTextToSize(txt,U-10);
-    const h=Math.max(10,6+lines.length*4.5);
-    doc.setFillColor(248,245,255);doc.setDrawColor(229,213,250);doc.setLineWidth(0.3);doc.rect(M,y,U,h,'FD');
-    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(155,114,207);doc.text(lbl,M+3,y+4);
-    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(76,29,149);doc.text(lines,M+3,y+8.5);
-    y+=h+2;
-  };
-  addDescBox(show2?'DESCRIPCIÓN OPCIÓN 1':'DESCRIPCIÓN',v('pr_desc'));
-  if(show2)addDescBox('DESCRIPCIÓN OPCIÓN 2',v('pr2_desc'));
+  // Tabla de roles
+  const roles1=[ ['Super Administrador',v('rol_superadmin')],['Administrador',v('rol_admin')],['Contribuyente',v('rol_contrib')],['DPO',v('rol_dpo')],['Razones sociales',v('rol_razon')] ].filter(r=>r[1]&&r[1]!=='0');
+  const roles2=[ ['Super Administrador',v('rol2_superadmin')],['Administrador',v('rol2_admin')],['Contribuyente',v('rol2_contrib')],['DPO',v('rol2_dpo')],['Razones sociales',v('rol2_razon')] ].filter(r=>r[1]&&r[1]!=='0');
 
-  const cols=[30,50,30,30,30];
-  const heads=['Cantidad','Producto','Valor mensual','Implementación','Vencimiento'];
+  const addRolesTable=(roles,label)=>{
+    if(!roles.length)return;
+    const h=8+roles.length*7;
+    doc.setFillColor(248,245,255);doc.setDrawColor(229,213,250);doc.setLineWidth(0.3);doc.rect(M,y,U,h,'FD');
+    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(155,114,207);doc.text(label,M+3,y+4);
+    doc.setFillColor(243,232,255);doc.rect(M,y+5,U/2,6,'F');doc.rect(M+U/2,y+5,U/2,6,'F');
+    doc.setFontSize(7.5);doc.setTextColor(76,29,149);doc.text('Rol',M+3,y+9.5);doc.text('Cantidad',M+U/2+3,y+9.5);
+    let ry=y+11;
+    roles.forEach((r,i)=>{
+      doc.setFillColor(i%2===0?255:248,i%2===0?255:245,i%2===0?255:255);doc.rect(M,ry,U,7,'F');
+      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(26,10,46);
+      doc.text(r[0],M+3,ry+5);doc.setFont('helvetica','bold');doc.text(r[1],M+U/2+3,ry+5);
+      ry+=7;
+    });
+    y=ry+3;
+  };
+  addRolesTable(roles1, show2?'USUARIOS POR ROL — OPCIÓN 1':'USUARIOS POR ROL');
+  if(show2) addRolesTable(roles2,'USUARIOS POR ROL — OPCIÓN 2');
+
+  const cols=[70,40,40,30];
+  const heads=['Producto / Add-on','Valor mensual','Implementación','Vencimiento'];
   doc.setFillColor(243,232,255);doc.setDrawColor(216,180,254);doc.setLineWidth(0.3);doc.rect(M,y,U,8,'FD');
   let cx=M;
   heads.forEach((h,i)=>{doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(76,29,149);doc.text(h,cx+2,y+5.5);cx+=cols[i];});
   y+=8;
-  const vals=[v('pr_cant'),v('pr_prod'),`${v('pr_valor')} ${mon}`,v('pr_impl'),fmtDate(v('pr_venc'))];
+  const vals=[v('pr_prod'),v('pr_valor')+' '+mon,v('pr_impl'),fmtDate(v('pr_venc'))];
   doc.setFillColor(255,255,255);doc.rect(M,y,U,8,'FD');cx=M;
   vals.forEach((val,i)=>{doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(26,10,46);doc.text(val||'—',cx+2,y+5.5);cx+=cols[i];});
   y+=8;
   if(show2){
-    const vals2=[v('pr2_cant'),v('pr2_prod'),`${v('pr2_valor')} ${mon}`,v('pr2_impl'),'—'];
+    const vals2=[v('pr2_prod'),v('pr2_valor')+' '+mon,v('pr2_impl'),'—'];
     doc.setFillColor(250,247,255);doc.rect(M,y,U,8,'FD');cx=M;
     vals2.forEach((val,i)=>{doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(26,10,46);doc.text(val||'—',cx+2,y+5.5);cx+=cols[i];});
     y+=8;
