@@ -32,6 +32,9 @@
   input::placeholder,textarea::placeholder{color:rgba(232,97,10,0.3);}
   select option{background:#1a1a1a;color:#fcd5b3;}
   .prod-row{display:grid;grid-template-columns:2fr 2fr 1.5fr 1.5fr;gap:8px;margin-bottom:8px;}
+  .addon-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+  .addon-check{display:flex;align-items:center;gap:8px;min-width:200px;}
+  .addon-price{min-width:120px;}
   .toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
   .toggle-lbl{font-size:11px;color:#fcd5b3;font-weight:500;}
   .toggle{position:relative;width:36px;height:20px;cursor:pointer;}
@@ -203,13 +206,41 @@
         </div>
         <div class="field"><label>Vencimiento producto</label><input id="pr_venc" type="date" oninput="update()"/></div>
       </div>
-      <div class="field-row full">
-        <div class="field"><label>Descripción del cobro (opcional)</label>
-          <textarea id="pr_desc" placeholder="Describe qué incluye este plan: cantidad de procesos, usuarios, módulos, etc." oninput="update()"></textarea>
+
+      <!-- Add-ons -->
+      <div class="section-label" style="margin-top:12px;">Add-ons</div>
+      <div class="addon-row">
+        <div class="addon-check">
+          <label class="toggle"><input type="checkbox" id="addon_vig" onchange="update()"/><span class="toggle-slider"></span></label>
+          <span class="toggle-lbl">Vigilancias</span>
+        </div>
+        <div class="field addon-price" id="box_vig" style="display:none;">
+          <label>Valor mensual</label><input id="addon_vig_val" placeholder="0" oninput="update()"/>
+        </div>
+      </div>
+      <div class="addon-row">
+        <div class="addon-check">
+          <label class="toggle"><input type="checkbox" id="addon_lia" onchange="update()"/><span class="toggle-slider"></span></label>
+          <span class="toggle-lbl">LIA (Inteligencia Artificial)</span>
+        </div>
+        <div class="field addon-price" id="box_lia" style="display:none;">
+          <label>Valor mensual</label><input id="addon_lia_val" placeholder="0" oninput="update()"/>
+        </div>
+      </div>
+      <div class="addon-row">
+        <div class="addon-check">
+          <label class="toggle"><input type="checkbox" id="addon_otro" onchange="update()"/><span class="toggle-slider"></span></label>
+          <span class="toggle-lbl">Otro add-on</span>
+        </div>
+        <div class="field addon-price" id="box_otro" style="display:none;">
+          <label>Nombre</label><input id="addon_otro_nom" placeholder="Nombre del add-on" oninput="update()"/>
+        </div>
+        <div class="field addon-price" id="box_otro2" style="display:none;">
+          <label>Valor mensual</label><input id="addon_otro_val" placeholder="0" oninput="update()"/>
         </div>
       </div>
 
-      <div class="toggle-row">
+      <div class="toggle-row" style="margin-top:14px;">
         <label class="toggle"><input type="checkbox" id="toggle2" onchange="toggleSecond()"/><span class="toggle-slider"></span></label>
         <span class="toggle-lbl">Agregar segunda cotización (opcional)</span>
       </div>
@@ -221,9 +252,36 @@
           <div class="field"><label>Valor mensual</label><input id="pr2_valor" placeholder="0" oninput="update()"/></div>
           <div class="field"><label>Implementación</label><input id="pr2_impl" placeholder="ej. Gratis" oninput="update()"/></div>
         </div>
-        <div class="field-row full">
-          <div class="field"><label>Descripción opción 2 (opcional)</label>
-            <textarea id="pr2_desc" placeholder="Describe qué incluye esta segunda opción" oninput="update()"></textarea>
+        <!-- Add-ons opción 2 -->
+        <div class="section-label" style="margin-top:8px;">Add-ons — Opción 2</div>
+        <div class="addon-row">
+          <div class="addon-check">
+            <label class="toggle"><input type="checkbox" id="addon2_vig" onchange="update()"/><span class="toggle-slider"></span></label>
+            <span class="toggle-lbl">Vigilancias</span>
+          </div>
+          <div class="field addon-price" id="box2_vig" style="display:none;">
+            <label>Valor mensual</label><input id="addon2_vig_val" placeholder="0" oninput="update()"/>
+          </div>
+        </div>
+        <div class="addon-row">
+          <div class="addon-check">
+            <label class="toggle"><input type="checkbox" id="addon2_lia" onchange="update()"/><span class="toggle-slider"></span></label>
+            <span class="toggle-lbl">LIA (Inteligencia Artificial)</span>
+          </div>
+          <div class="field addon-price" id="box2_lia" style="display:none;">
+            <label>Valor mensual</label><input id="addon2_lia_val" placeholder="0" oninput="update()"/>
+          </div>
+        </div>
+        <div class="addon-row">
+          <div class="addon-check">
+            <label class="toggle"><input type="checkbox" id="addon2_otro" onchange="update()"/><span class="toggle-slider"></span></label>
+            <span class="toggle-lbl">Otro add-on</span>
+          </div>
+          <div class="field addon-price" id="box2_otro" style="display:none;">
+            <label>Nombre</label><input id="addon2_otro_nom" placeholder="Nombre del add-on" oninput="update()"/>
+          </div>
+          <div class="field addon-price" id="box2_otro2" style="display:none;">
+            <label>Valor mensual</label><input id="addon2_otro_val" placeholder="0" oninput="update()"/>
           </div>
         </div>
       </div>
@@ -280,15 +338,53 @@ function toggleSecond(){
   update();
 }
 
+function chkAddon(id,boxes){
+  const on=document.getElementById(id).checked;
+  boxes.forEach(b=>{const el=document.getElementById(b);if(el)el.style.display=on?'block':'none';});
+  update();
+}
+
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
+function getAddons(suffix=''){
+  const addons=[];
+  if(document.getElementById('addon'+suffix+'_vig')?.checked) addons.push({nombre:'Vigilancias',valor:v('addon'+suffix+'_vig_val')});
+  if(document.getElementById('addon'+suffix+'_lia')?.checked) addons.push({nombre:'LIA (IA)',valor:v('addon'+suffix+'_lia_val')});
+  if(document.getElementById('addon'+suffix+'_otro')?.checked && v('addon'+suffix+'_otro_nom')) addons.push({nombre:v('addon'+suffix+'_otro_nom'),valor:v('addon'+suffix+'_otro_val')});
+  return addons;
+}
+
+function addonsHtml(addons, label){
+  if(!addons.length) return '';
+  return `<div class="prop-desc">
+    <span class="prop-desc-lbl">${label}</span>
+    <table style="width:100%;font-size:10px;border-collapse:collapse;">
+      <thead><tr style="background:#FFF0E6;"><th style="text-align:left;padding:4px 8px;color:#7A2E00;font-size:9px;">Add-on</th><th style="text-align:right;padding:4px 8px;color:#7A2E00;font-size:9px;">Valor mensual</th></tr></thead>
+      <tbody>${addons.map(({nombre,valor},i)=>`<tr style="background:${i%2===0?'#fff':'#fffaf7'}"><td style="padding:4px 8px;">${nombre}</td><td style="padding:4px 8px;text-align:right;font-weight:600;">${fmtNum(valor)} ${v('pr_moneda')}</td></tr>`).join('')}</tbody>
+    </table>
+  </div>`;
+}
+
 function update(){
+  // Show/hide addon price boxes
+  ['vig','lia'].forEach(a=>{
+    const on=document.getElementById('addon_'+a)?.checked;
+    const el=document.getElementById('box_'+a);
+    if(el)el.style.display=on?'flex':'none';
+    const on2=document.getElementById('addon2_'+a)?.checked;
+    const el2=document.getElementById('box2_'+a);
+    if(el2)el2.style.display=on2?'flex':'none';
+  });
+  const otroOn=document.getElementById('addon_otro')?.checked;
+  ['box_otro','box_otro2'].forEach(b=>{const el=document.getElementById(b);if(el)el.style.display=otroOn?'flex':'none';});
+  const otro2On=document.getElementById('addon2_otro')?.checked;
+  ['box2_otro','box2_otro2'].forEach(b=>{const el=document.getElementById(b);if(el)el.style.display=otro2On?'flex':'none';});
   const mon=v('pr_moneda');
   const total=calcTotal(v('pr_valor'));
   const show2=document.getElementById('toggle2').checked;
   const total2=calcTotal(v('pr2_valor'));
-  const desc=v('pr_desc');
-  const desc2=v('pr2_desc');
+  const addons1=getAddons('');
+  const addons2=getAddons('2');
 
   const prod2Row=show2?`<tr style="background:#fffaf7;">
     <td>${v('pr2_cant')||'—'}</td><td>${v('pr2_prod')||'—'}</td>
@@ -339,7 +435,6 @@ function update(){
     </div>
     <div class="prop-section">
       <div class="prop-sec-title">Productos${show2?' — Doble cotización':''}</div>
-      ${descBlock}${desc2Block}
       <table class="prop-table">
         <thead><tr><th>Cantidad</th><th>Producto / Add-on</th><th>Valor mensual</th><th>Implementación</th><th>Moneda</th></tr></thead>
         <tbody>
@@ -351,6 +446,8 @@ function update(){
           ${prod2Row}
         </tbody>
       </table>
+      ${addonsHtml(addons1, show2?'ADD-ONS — OPCIÓN 1':'ADD-ONS')}
+      ${show2?addonsHtml(addons2,'ADD-ONS — OPCIÓN 2'):''}
       <div class="prop-total-row">${totales}</div>
     </div>
     <div class="prop-section">
