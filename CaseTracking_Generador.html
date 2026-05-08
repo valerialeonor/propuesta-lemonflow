@@ -389,9 +389,10 @@ function update(){
 }
 
 // ── REPOSITORIO ──────────────────────────────────────────────────────────────
+const SHEETS_URL='https://script.google.com/a/macros/lemontech.com/s/AKfycbxMvNLOs6S8eRj3NK6oZYRMskv2-rR5PEo9z4cgV7F3jmrCMyPe7SGizvryJ7DPxZhr/exec';
 const STORAGE_KEY='casetracking_proposals';
 function getProposals(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){return[];}}
-function saveProposals(arr){localStorage.setItem(STORAGE_KEY,JSON.stringify(arr));}
+function saveProposalsLocal(arr){localStorage.setItem(STORAGE_KEY,JSON.stringify(arr));}
 
 function collectData(){
   const ids=['am_nombre','am_correo','am_compid','am_emision','am_vencimiento',
@@ -414,30 +415,69 @@ function loadData(data){
   update();
 }
 
-function saveProposal(){
+async function saveProposal(){
   const cliente=v('cl_empresa')||v('cl_nombre');
+  const am=v('am_nombre');
   if(!cliente){showToast('⚠ Ingresa al menos el nombre de la empresa');return;}
-  const proposals=getProposals();
+  if(!am){showToast('⚠ Ingresa tu nombre como Account Manager');return;}
+
   const data=collectData();
+  const nombre_propuesta=`${cliente} - CaseTracking`;
+  data.nombre_propuesta=nombre_propuesta;
+
+  const proposals=getProposals();
   const id=Date.now();
   const date=new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
-  proposals.unshift({id,name:cliente,date,data});
-  saveProposals(proposals);
-  showToast(`✓ Propuesta de ${cliente} guardada`);
+  proposals.unshift({id,name:nombre_propuesta,date,data});
+  saveProposalsLocal(proposals);
+
+  showToast('💾 Guardando en la nube...');
+  try{
+    await fetch(SHEETS_URL,{method:'POST',body:JSON.stringify(data)});
+    showToast(`✓ "${nombre_propuesta}" guardada en la nube`);
+  }catch(e){
+    showToast(`✓ Guardada localmente (sin conexión a la nube)`);
+  }
 }
 
 function openRepo(){renderRepo();document.getElementById('modal-repo').classList.add('open');}
 function closeRepo(){document.getElementById('modal-repo').classList.remove('open');}
 
-function renderRepo(){
-  const proposals=getProposals();
+async function renderRepo(){
   const list=document.getElementById('repo-list');
-  if(!proposals.length){list.innerHTML='<div class="repo-empty">No hay propuestas guardadas aún.<br>Completa el formulario y haz clic en <b>Guardar propuesta</b>.</div>';return;}
+  const am=v('am_nombre');
+  list.innerHTML='<div class="repo-empty">Cargando propuestas...</div>';
+
+  if(am){
+    try{
+      const res=await fetch(`${SHEETS_URL}?am=${encodeURIComponent(am)}`);
+      const json=await res.json();
+      if(json.proposals&&json.proposals.length){
+        list.innerHTML=json.proposals.map((p)=>`
+          <div class="repo-item">
+            <div class="repo-item-info">
+              <div class="repo-item-name">${p.nombre}</div>
+              <div class="repo-item-meta">☁️ Guardado el ${p.fecha}</div>
+            </div>
+            <div class="repo-item-btns">
+              <button class="btn-load" onclick='loadCloudProposal(${JSON.stringify(p.data).replace(/'/g,"&#39;")})'>Abrir</button>
+            </div>
+          </div>`).join('');
+        return;
+      }
+    }catch(e){}
+  }
+
+  const proposals=getProposals();
+  if(!proposals.length){
+    list.innerHTML=`<div class="repo-empty">${am?'No hay propuestas guardadas para <b>'+am+'</b>.':'Ingresa tu nombre de AM para ver tus propuestas.'}<br>Completa el formulario y haz clic en <b>Guardar propuesta</b>.</div>`;
+    return;
+  }
   list.innerHTML=proposals.map(p=>`
     <div class="repo-item">
       <div class="repo-item-info">
         <div class="repo-item-name">${p.name}</div>
-        <div class="repo-item-meta">Guardado el ${p.date}</div>
+        <div class="repo-item-meta">📱 Local — ${p.date}</div>
       </div>
       <div class="repo-item-btns">
         <button class="btn-load" onclick="loadProposal(${p.id})">Abrir</button>
@@ -446,11 +486,13 @@ function renderRepo(){
     </div>`).join('');
 }
 
+function loadCloudProposal(data){loadData(data);closeRepo();showToast(`✓ Propuesta cargada desde la nube`);}
+
 function loadProposal(id){
   const p=getProposals().find(x=>x.id===id);
-  if(p){loadData(p.data);closeRepo();showToast(`✓ Propuesta de ${p.name} cargada`);}
+  if(p){loadData(p.data);closeRepo();showToast(`✓ Propuesta cargada`);}
 }
-function deleteProposal(id){saveProposals(getProposals().filter(x=>x.id!==id));renderRepo();}
+function deleteProposal(id){saveProposalsLocal(getProposals().filter(x=>x.id!==id));renderRepo();}
 
 // ── PDF ──────────────────────────────────────────────────────────────────────
 function downloadPDF(){
@@ -570,7 +612,7 @@ function downloadPDF(){
   y+=6;doc.setDrawColor(252,213,179);doc.setLineWidth(0.4);doc.line(M,y,W-M,y);y+=6;
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(232,97,10);doc.text('Lemontech SpA  ·  Tax ID 99.511.620-0',M,y+3);
   doc.setTextColor(107,114,128);doc.line(W-M-55,y+6,W-M,y+6);doc.setFont('helvetica','bold');doc.text('Firma Representante',W-M-27,y+11,{align:'center'});
-  doc.save(`CaseTracking_Propuesta_${v('cl_empresa')||'Cliente'}.pdf`);
+  doc.save(`${v('cl_empresa')||'Cliente'} - CaseTracking.pdf`);
 }
 
 update();
