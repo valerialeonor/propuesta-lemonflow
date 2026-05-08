@@ -489,11 +489,11 @@ function update(){
 }
 
 // ── REPOSITORIO ──────────────────────────────────────────────────────────────
-const AIRTABLE_TOKEN='pattjA7c4qzJLDu6w.d1e4c13c204d68c51159496b43875db3929fd52da035cbdc777e710c25467647';
-const AIRTABLE_BASE='appvTKWIxlHHMYZYL';
-const AIRTABLE_TABLE='tbltMHpCsP81xRuml';
-const AIRTABLE_URL=`https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}`;
-const AIRTABLE_HEADERS={'Authorization':'Bearer '+AIRTABLE_TOKEN,'Content-Type':'application/json'};
+
+
+
+const WORKER_URL='https://propuestas-lemontech.vzapata.workers.dev';
+
 const STORAGE_KEY='casetracking_proposals';
 function getProposals(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){return[];}}
 function saveProposalsLocal(arr){localStorage.setItem(STORAGE_KEY,JSON.stringify(arr));}
@@ -567,17 +567,17 @@ async function saveProposal(){
 
   showToast('💾 Guardando en la nube...');
   try{
-    const res=await fetch(AIRTABLE_URL,{
+    const res=await fetch(WORKER_URL,{
       method:'POST',
-      headers:AIRTABLE_HEADERS,
-      body:JSON.stringify({fields:{
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
         'Nombre':nombre_propuesta,
         'AE':am,
         'Cliente':cliente,
         'Fecha':date,
         'Producto':'CaseTracking',
         'Datos':JSON.stringify(data)
-      }})
+      })
     });
     if(res.ok){showToast(`✓ "${nombre_propuesta}" guardada en la nube`);}
     else{showToast(`✓ Guardada localmente`);}
@@ -596,8 +596,7 @@ async function renderRepo(){
 
   if(am){
     try{
-      const url=`${AIRTABLE_URL}?filterByFormula=AND({AE}="${am}",{Producto}="CaseTracking")&sort[0][field]=Fecha&sort[0][direction]=desc`;
-      const res=await fetch(url,{headers:AIRTABLE_HEADERS});
+      const res=await fetch(`${WORKER_URL}?ae=${encodeURIComponent(am)}&producto=CaseTracking`);
       const json=await res.json();
       if(json.records&&json.records.length){
         list.innerHTML=json.records.map(r=>{
@@ -642,7 +641,7 @@ function loadProposal(id){const p=getProposals().find(x=>x.id===id);if(p){loadDa
 function deleteProposal(id){saveProposalsLocal(getProposals().filter(x=>x.id!==id));renderRepo();}
 async function deleteAirtable(id){
   try{
-    await fetch(`${AIRTABLE_URL}/${id}`,{method:'DELETE',headers:AIRTABLE_HEADERS});
+    await fetch(`${WORKER_URL}?id=${id}`,{method:'DELETE'});
     renderRepo();showToast('✓ Propuesta eliminada');
   }catch(e){showToast('Error al eliminar');}
 }
