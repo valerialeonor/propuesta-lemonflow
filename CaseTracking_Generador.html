@@ -365,7 +365,21 @@ const STORAGE_KEY='casetracking_proposals';
 
 function v(id){return(document.getElementById(id)||{}).value||'';}
 function fmtDate(s){if(!s)return'';const d=new Date(s+'T00:00:00');if(isNaN(d))return s;return d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});}
-function fmtNum(n){return((parseFloat(n)||0)*12).toLocaleString('es-CL');}
+function getMultiplier(){
+  const modal=v('cl_modal');
+  if(modal==='Mensual') return 1;
+  if(modal==='Trimestral') return 3;
+  if(modal==='Semestral') return 6;
+  return 12;
+}
+function getTotalLabel(){
+  const modal=v('cl_modal');
+  if(modal==='Mensual') return 'Total mensual';
+  if(modal==='Trimestral') return 'Total trimestral';
+  if(modal==='Semestral') return 'Total semestral';
+  return 'Total anual';
+}
+function fmtNum(n){return((parseFloat(n)||0)*getMultiplier()).toLocaleString('es-CL');}
 function fmtM(n){return(parseFloat(n)||0).toLocaleString('es-CL');}
 function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
@@ -442,7 +456,7 @@ function update(){
             </tr></tbody>
           </table>
           ${addonsHtml(o.addons,mon)}
-          <div style="text-align:right;margin-top:6px;">  <span class="prop-total-box" style="font-size:8px;padding:3px 10px;border-radius:20px;font-weight:700;">Total anual: ${(o.totalBase*12).toLocaleString('es-CL')} ${mon}</span></div>
+          <div style="text-align:right;margin-top:6px;">  <span class="prop-total-box" style="font-size:8px;padding:3px 10px;border-radius:20px;font-weight:700;">${getTotalLabel()}: ${(o.totalBase*getMultiplier()).toLocaleString('es-CL')} ${mon}</span></div>
         </div>`;
       html+=`<div style="display:grid;grid-template-columns:${b?'1fr 1fr':'1fr'};gap:8px;margin-bottom:8px;">${renderOpt(a)}${b?renderOpt(b):''}</div>`;
     }
@@ -703,7 +717,7 @@ function downloadPDF(){
       });
     }
     // 6. Total botón pequeño redondeado
-    const totalTxt='Total anual: '+(o.totalBase*12).toLocaleString('es-CL')+' '+mon;
+    const totalTxt=getTotalLabel()+': '+(o.totalBase*getMultiplier()).toLocaleString('es-CL')+' '+mon;
     const totalW=doc.getTextWidth(totalTxt)+8;
     doc.setFillColor(15,7,32);doc.roundedRect(xStart+width-totalW-2,py+2,totalW+2,6,3,3,'F');
     doc.setFont('helvetica','bold');doc.setFontSize(6.5);doc.setTextColor(252,213,179);

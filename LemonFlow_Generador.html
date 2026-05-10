@@ -337,7 +337,21 @@ const STORAGE_KEY='lemonflow_proposals';
 
 function v(id){return(document.getElementById(id)||{}).value||'';}
 function fmtDate(s){if(!s)return'';const d=new Date(s+'T00:00:00');if(isNaN(d))return s;return d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});}
-function fmtNum(n){return((parseFloat(n)||0)*12).toLocaleString('es-CL');}
+function getMultiplier(){
+  const modal=v('cl_modal');
+  if(modal==='Mensual') return 1;
+  if(modal==='Trimestral') return 3;
+  if(modal==='Semestral') return 6;
+  return 12; // Anual por defecto
+}
+function getTotalLabel(){
+  const modal=v('cl_modal');
+  if(modal==='Mensual') return 'Total mensual';
+  if(modal==='Trimestral') return 'Total trimestral';
+  if(modal==='Semestral') return 'Total semestral';
+  return 'Total anual';
+}
+function fmtNum(n){return((parseFloat(n)||0)*getMultiplier()).toLocaleString('es-CL');}
 function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
 function toggleOpt(n){
@@ -404,14 +418,14 @@ function update(){
           <table class="prop-table"><thead><tr><th>Producto</th><th>Valor mensual</th><th>Implementación</th></tr></thead>
           <tbody><tr><td>${a.prod||'—'}</td><td>${a.valor||'0'} ${mon}</td><td><span class="badge-gratis">${a.impl||'—'}</span></td></tr></tbody></table>
           ${rolesInline(a.roles)}
-          <div style="text-align:right;margin-top:6px;"><span class="prop-total-box" style="font-size:8px;padding:3px 10px;border-radius:20px;font-weight:700;">Total anual: ${fmtNum(a.valor)} ${mon}</span></div>
+          <div style="text-align:right;margin-top:6px;"><span class="prop-total-box" style="font-size:8px;padding:3px 10px;border-radius:20px;font-weight:700;">${getTotalLabel()}: ${fmtNum(a.valor)} ${mon}</span></div>
         </div>
         ${b?`<div class="prop-opt-block">
           <div class="prop-opt-title">Propuesta ${b.num} — ${b.prod||'—'}</div>
           <table class="prop-table"><thead><tr><th>Producto</th><th>Valor mensual</th><th>Implementación</th></tr></thead>
           <tbody><tr><td>${b.prod||'—'}</td><td>${b.valor||'0'} ${mon}</td><td><span class="badge-gratis">${b.impl||'—'}</span></td></tr></tbody></table>
           ${rolesInline(b.roles)}
-          <div style="text-align:right;margin-top:6px;"><span class="prop-total-box" style="font-size:8px;padding:3px 10px;border-radius:20px;font-weight:700;">Total anual: ${fmtNum(b.valor)} ${mon}</span></div>
+          <div style="text-align:right;margin-top:6px;"><span class="prop-total-box" style="font-size:8px;padding:3px 10px;border-radius:20px;font-weight:700;">${getTotalLabel()}: ${fmtNum(b.valor)} ${mon}</span></div>
         </div>`:''}
       </div>`;
     }
@@ -554,134 +568,178 @@ async function deleteAirtable(id){try{await fetch(`${WORKER_URL}?id=${id}`,{meth
 function downloadPDF(){
   const{jsPDF}=window.jspdf;
   const doc=new jsPDF({unit:'mm',format:'a4'});
-  const W=210,M=14,U=W-2*M;
+  const W=210,M=15,U=W-2*M;
   const mon=v('pr_moneda');
   const opts=getOpts();
 
-  // HEADER — fondo oscuro completo
-  doc.setFillColor(15,7,32);doc.rect(0,0,W,32,'F');
-  doc.setFillColor(139,47,201);doc.rect(0,0,W,2.5,'F');
-  doc.setFont('helvetica','bold');doc.setFontSize(16);
-  doc.setTextColor(199,125,255);doc.text('Lemon',M,14);
-  const lw=doc.getTextWidth('Lemon');
-  doc.setTextColor(255,255,255);doc.text('Flow',M+lw,14);
-  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(155,114,207);doc.text('by LemonTech',M,20);
-  doc.setFontSize(8);doc.setTextColor(224,200,255);
-  doc.text('Lemontech SpA · Tax ID 99.511.620-0',W-M,12,{align:'right'});
-  doc.setTextColor(155,114,207);doc.text('Las Condes, Santiago. Chile.',W-M,18,{align:'right'});
+  // HEADER — igual que versión que funcionaba
+  doc.setFillColor(15,7,32);doc.rect(0,0,W,28,'F');
+  doc.setFillColor(139,47,201);doc.rect(0,0,W,2,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(16);doc.setTextColor(199,125,255);doc.text('Lemon',M,14);
+  const lw=doc.getTextWidth('Lemon');doc.setTextColor(255,255,255);doc.text('Flow',M+lw,14);
+  doc.setFontSize(8);doc.setTextColor(155,114,207);doc.text('by LemonTech',M,20);
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(224,200,255);
+  doc.text('Lemontech SpA  ·  Tax ID 99.511.620-0',W-M,12,{align:'right'});
+  doc.text('Las Condes, Santiago. Chile.',W-M,18,{align:'right'});
   doc.setTextColor(199,125,255);doc.text('www.lemontech.com',W-M,24,{align:'right'});
 
-  // SUBHEADER morado
-  doc.setFillColor(107,33,200);doc.rect(0,32,W,10,'F');
+  doc.setFillColor(107,33,200);doc.rect(0,28,W,9,'F');
   const metas=[['Account Manager',v('am_nombre')],['Correo',v('am_correo')],['Emisión',fmtDate(v('am_emision'))],['Vence',fmtDate(v('am_vencimiento'))]];
+  const colW=U/4;
   metas.forEach(([lbl,val],i)=>{
-    const x=M+i*(U/4);
-    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(199,125,255);doc.text(lbl,x,36);
-    doc.setFont('helvetica','normal');doc.setTextColor(255,255,255);doc.text(val||'',x,40);
+    const x=M+i*colW;
+    doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(199,125,255);doc.text(lbl,x,33.5);
+    doc.setFont('helvetica','normal');doc.setTextColor(224,200,255);doc.text(val||'',x,37.5);
   });
 
-  let y=48;
+  let y=44;
   const secTitle=(txt)=>{
     doc.setDrawColor(139,47,201);doc.setLineWidth(0.8);doc.line(M,y,M,y+5);
     doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(107,33,200);doc.text(txt,M+4,y+4);y+=9;
   };
+  const fieldGrid=(pairs)=>{
+    const hw=(U-3)/2;
+    for(let i=0;i<pairs.length;i+=2){
+      pairs.slice(i,i+2).forEach((p,j)=>{
+        const x=M+j*(hw+3);
+        doc.setFillColor(248,245,255);doc.setDrawColor(229,213,250);doc.setLineWidth(0.3);doc.roundedRect(x,y,hw,10,1.5,1.5,'FD');
+        doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(155,114,207);doc.text(p[0],x+3,y+4);
+        doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(26,10,46);doc.text(p[1]||'—',x+3,y+8.5);
+      });
+      y+=12;
+    }
+    y+=2;
+  };
 
-  // INFO CLIENTE
+  // CLIENTE — 8 campos
   secTitle('Información del cliente');
-  const clientPairs=[['Nombre de contacto',v('cl_nombre')],['Correo',v('cl_correo')],['Razón social',v('cl_razon')],['RUT / Tax ID',v('cl_tax')],['Giro / Actividad',v('cl_giro')],['Modalidad de facturación',v('cl_modal')],['Inicio suscripción',v('cl_inicio')],['Fin suscripción',v('cl_fin')]];
-  const hw=(U-3)/2;
-  for(let i=0;i<clientPairs.length;i+=2){
-    clientPairs.slice(i,i+2).forEach((p,j)=>{
-      const x=M+j*(hw+3);
-      doc.setFillColor(248,245,255);doc.setDrawColor(229,213,250);doc.setLineWidth(0.3);doc.roundedRect(x,y,hw,10,1.5,1.5,'FD');
-      doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(155,114,207);doc.text(p[0],x+3,y+4);
-      doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(26,10,46);doc.text(p[1]||'—',x+3,y+8.5);
-    });
-    y+=12;
-  }
-  y+=3;
+  fieldGrid([
+    ['Nombre de contacto',v('cl_nombre')],['Correo',v('cl_correo')],
+    ['Razón social',v('cl_razon')],['RUT / Tax ID',v('cl_tax')],
+    ['Giro / Actividad',v('cl_giro')],['Modalidad de facturación',v('cl_modal')],
+    ['Inicio suscripción',v('cl_inicio')],['Fin suscripción',v('cl_fin')]
+  ]);
 
+  // MINUTA
   if(v('minuta')){
     secTitle('Minuta de reunión');
-    const mlines=doc.splitTextToSize(v('minuta'),U-6);
-    const mh=Math.max(12,4+mlines.length*4.5);
+    const ml=doc.splitTextToSize(v('minuta'),U-6);
+    const mh=Math.max(10,4+ml.length*4.5);
     doc.setFillColor(248,245,255);doc.setDrawColor(229,213,250);doc.setLineWidth(0.3);doc.rect(M,y,U,mh,'FD');
-    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(51,51,51);doc.text(mlines,M+3,y+5);
-    y+=mh+5;
+    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(51,51,51);doc.text(ml,M+3,y+5);
+    y+=mh+4;
   }
 
+  // COTIZACIONES — estilo igual que versión que funcionaba
   secTitle('Cotizaciones');
   const halfW=(U-4)/2;
-  const drawProp=(o,xStart,width,startY)=>{
+
+  opts.forEach((o,idx)=>{
+    const xStart=idx%2===0?M:M+halfW+4;
+    const width=opts.length===1?U:halfW;
+    if(idx%2===0&&idx>0) y+=2; // pequeño espacio entre filas de pares
+
+    // Roles
     const rolesStr=o.roles.length?o.roles.map(r=>r[0].replace('Super Administrador','S.Adm').replace('Administrador','Adm').replace('Contribuyente','Contrib').replace('Razones sociales','R.Soc')+': '+r[1]).join('   '):'';
     const rl=rolesStr?doc.splitTextToSize(rolesStr,width-6):[];
-    const rolesH=rl.length?(4+rl.length*4.5):0;
-    const blockH=9+8+8+rolesH+10;
-    // 1. Fondo lila bloque
+
+    // Calcular altura total del bloque
+    const rolesH=rl.length?3+rl.length*4.5:0;
+    const blockH=8+7+8+rolesH+10;
+
+    // Si es impar y hay siguiente, dibuja ambos a la misma altura
+    const startY=(idx%2===1&&opts[idx-1])?y-blockH-2:y;
+
+    // Fondo lila redondeado
     doc.setFillColor(248,245,255);doc.setDrawColor(229,213,250);doc.setLineWidth(0.4);
     doc.roundedRect(xStart,startY,width,blockH,2,2,'FD');
     let py=startY+2;
-    // 2. Título
+
+    // Título
     doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(107,33,200);
     doc.text('PROPUESTA '+o.num+(o.prod?' — '+o.prod:''),xStart+3,py+4);py+=7;
-    // 3. Cabecera con fondo lila oscuro
+
+    // Cabecera tabla — fondo lila más oscuro con bordes
     doc.setFillColor(216,195,248);doc.rect(xStart,py,width,6,'F');
     doc.setFont('helvetica','bold');doc.setFontSize(6);doc.setTextColor(76,29,149);
     doc.text('Producto',xStart+3,py+4.5);
     doc.text('Valor mensual',xStart+width*0.42,py+4.5);
     doc.text('Implementación',xStart+width*0.68,py+4.5);
     py+=6;
-    // 4. Fila datos con fondo blanco + borde inferior
+
+    // Línea separadora
+    doc.setDrawColor(216,195,248);doc.setLineWidth(0.3);doc.line(xStart,py,xStart+width,py);
+
+    // Fila datos
     doc.setFillColor(255,255,255);doc.rect(xStart,py,width,7,'F');
-    doc.setDrawColor(229,213,250);doc.setLineWidth(0.3);doc.line(xStart,py+7,xStart+width,py+7);
     doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(26,10,46);
     doc.text(o.prod||'—',xStart+3,py+5);
     doc.text(o.valor+' '+mon,xStart+width*0.42,py+5);
     doc.text(o.impl||'—',xStart+width*0.68,py+5);
-    py+=8;
-    // 5. Roles en línea con fondo lila suave
+    py+=7;
+
+    // Línea separadora inferior
+    doc.setDrawColor(229,213,250);doc.setLineWidth(0.3);doc.line(xStart,py,xStart+width,py);
+
+    // Roles
     if(rl.length){
       doc.setFillColor(240,233,255);doc.rect(xStart,py,width,3+rl.length*4.5,'F');
       doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(107,33,200);
       doc.text(rl,xStart+3,py+3);py+=3+rl.length*4.5;
     }
-    // 6. Total — botón pequeño redondeado alineado a la derecha
-    const totalTxt='Total anual: '+fmtNum(o.valor)+' '+mon;
-    const totalW=doc.getTextWidth(totalTxt)+8;
-    doc.setFillColor(15,7,32);doc.roundedRect(xStart+width-totalW-2,py+2,totalW+2,6,3,3,'F');
+
+    // Total — botón redondeado pequeño proporcional al texto
+    const totalTxt=getTotalLabel()+': '+fmtNum(o.valor)+' '+mon;
+    const totalW=doc.getTextWidth(totalTxt)+6;
+    doc.setFillColor(15,7,32);doc.roundedRect(xStart+width-totalW-2,py+2,totalW+2,6,2,2,'F');
     doc.setFont('helvetica','bold');doc.setFontSize(6.5);doc.setTextColor(224,200,255);
     doc.text(totalTxt,xStart+width-2,py+6.5,{align:'right'});
-    return blockH+3;
-  };
-  for(let i=0;i<opts.length;i+=2){
-    const a=opts[i];const b=opts[i+1];
-    const hA=drawProp(a,M,b?halfW:U,y);
-    const hB=b?drawProp(b,M+halfW+4,halfW,y):0;
-    y+=Math.max(hA,hB)+2;
-  }
+
+    // Solo avanzar Y después de propuestas impares (o la última)
+    if(idx%2===0){
+      if(!opts[idx+1]) y+=blockH+3; // única o última impar
+    } else {
+      y+=blockH+3;
+    }
+  });
+
+  // Nueva página si hay más de 1 propuesta
   if(opts.length>1){doc.addPage();y=15;}
+
+  // CONDICIÓN PARTICULAR
   if(v('cond_det')){
     secTitle('Condiciones particulares');
     doc.setFillColor(243,232,255);doc.setDrawColor(216,180,254);doc.setLineWidth(0.3);doc.roundedRect(M,y,U,10,1.5,1.5,'FD');
     doc.setDrawColor(139,47,201);doc.setLineWidth(1.5);doc.line(M,y,M,y+10);
     doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(76,29,149);doc.text(v('cond_det'),M+4,y+6.5);y+=14;
   }
+
+  // CONDICIONES LEGALES
   secTitle('Condiciones legales');
-  const legales=[['1.','Aceptación','La suscripción mediante firma implica la aceptación del servicio.'],['2.','Términos y condiciones','recursos.lemontech.com/hubfs/Archivos-legales/ACUERDO-MARCO-DE-SERVICIOS-DE-LEMONTECH.pdf'],['3.','Aviso de privacidad','recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf']];
+  const legales=[
+    ['1.','Aceptación de la propuesta','La suscripción mediante firma implica la aceptación del servicio.'],
+    ['2.','Términos y condiciones','recursos.lemontech.com/hubfs/Archivos-legales/ACUERDO-MARCO-DE-SERVICIOS-DE-LEMONTECH.pdf'],
+    ['3.','Aviso de privacidad','recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf']
+  ];
   legales.forEach(([n,t,d],i)=>{
     doc.setFillColor(i%2===0?248:255,i%2===0?245:255,255);doc.rect(M,y,U,10,'F');
-    doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(107,33,200);doc.text(n,M+2,y+4.5);
-    doc.setTextColor(26,10,46);doc.text(t,M+10,y+4.5);
-    doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(107,114,128);doc.text(d,M+10,y+8.5);y+=11;
+    doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(107,33,200);doc.text(n,M+3,y+4.5);
+    doc.setTextColor(26,10,46);doc.text(t,M+11,y+4.5);
+    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(107,114,128);doc.text(d,M+11,y+8.5);
+    y+=11;
   });
+
+  // FIRMA
   if(y+25>285)doc.addPage();
-  y+=8;
-  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(155,114,207);doc.text('Lemontech SpA · Tax ID 99.511.620-0',M,y);
-  const fw=80;const fx=W-M-fw;
-  doc.setDrawColor(76,29,149);doc.setLineWidth(1);doc.line(fx,y+12,W-M,y+12);
-  doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(76,29,149);doc.text('Firma y nombre del representante',fx+(fw/2),y+17,{align:'center'});
+  y+=6;
+  doc.setDrawColor(216,180,254);doc.setLineWidth(0.4);doc.line(M,y,W-M,y);y+=6;
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(155,114,207);doc.text('Lemontech SpA  ·  Tax ID 99.511.620-0',M,y+3);
+  doc.setTextColor(107,114,128);doc.line(W-M-45,y+6,W-M,y+6);
+  doc.text('Firma representante',W-M-22,y+10,{align:'center'});
+
   doc.save((v('cl_razon')||'Cliente')+' - LemonFlow.pdf');
 }
+
 update();
 </script>
 </body>
