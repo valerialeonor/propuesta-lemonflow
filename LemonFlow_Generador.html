@@ -292,6 +292,10 @@ select option{background:#1a0a2e;color:#e0c8ff;}
   <!-- CONDICIÓN Y MINUTA -->
   <div class="section-block">
     <div class="section-label">Condición particular</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <label class="toggle"><input type="checkbox" id="mostrar_iva" checked onchange="update()"/><span class="toggle-slider"></span></label>
+      <span class="toggle-lbl">Mostrar "IVA no incluido"</span>
+    </div>
     <div class="field-row full">
       <div class="field"><label>Detalle</label><input id="cond_det" placeholder="Describe la condición especial" oninput="update()"/></div>
     </div>
@@ -338,12 +342,17 @@ const STORAGE_KEY='lemonflow_proposals';
 
 function v(id){return(document.getElementById(id)||{}).value||'';}
 function fmtDate(s){if(!s)return'';const d=new Date(s+'T00:00:00');if(isNaN(d))return s;return d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function ivaLabel(){
+  return document.getElementById('mostrar_iva')?.checked
+    ? '<div style="font-size:8px;color:#9B72CF;margin-top:3px;text-align:right;">IVA no incluido</div>'
+    : '';
+}
 function getMultiplier(){
   const modal=v('cl_modal');
   if(modal==='Mensual') return 1;
   if(modal==='Trimestral') return 3;
   if(modal==='Semestral') return 6;
-  return 12; // Anual por defecto
+  return 12;
 }
 function getTotalLabel(){
   const modal=v('cl_modal');
@@ -419,14 +428,14 @@ function update(){
           <table class="prop-table"><thead><tr><th>Producto</th><th>Valor mensual</th><th>Implementación</th></tr></thead>
           <tbody><tr><td>${a.prod||'—'}</td><td>${a.valor||'0'} ${mon}</td><td><span class="badge-gratis">${a.impl||'—'}</span></td></tr></tbody></table>
           ${rolesInline(a.roles)}
-          <div style="text-align:right;margin-top:6px;"><span class="prop-total-box" style="font-size:8px;padding:3px 10px;border-radius:20px;font-weight:700;">${getTotalLabel()}: ${fmtNum(a.valor)} ${mon}</span><div style="font-size:8px;color:#9B72CF;margin-top:3px;">IVA no incluido</div></div>
+          <div style="text-align:right;margin-top:6px;"><span class="prop-total-box" style="font-size:8px;padding:3px 10px;border-radius:20px;font-weight:700;">${getTotalLabel()}: ${fmtNum(a.valor)} ${mon}</span>${ivaLabel()}</div>
         </div>
         ${b?`<div class="prop-opt-block">
           <div class="prop-opt-title">Propuesta ${b.num} — ${b.prod||'—'}</div>
           <table class="prop-table"><thead><tr><th>Producto</th><th>Valor mensual</th><th>Implementación</th></tr></thead>
           <tbody><tr><td>${b.prod||'—'}</td><td>${b.valor||'0'} ${mon}</td><td><span class="badge-gratis">${b.impl||'—'}</span></td></tr></tbody></table>
           ${rolesInline(b.roles)}
-          <div style="text-align:right;margin-top:6px;"><span class="prop-total-box" style="font-size:8px;padding:3px 10px;border-radius:20px;font-weight:700;">${getTotalLabel()}: ${fmtNum(b.valor)} ${mon}</span><div style="font-size:8px;color:#9B72CF;margin-top:3px;">IVA no incluido</div></div>
+          <div style="text-align:right;margin-top:6px;"><span class="prop-total-box" style="font-size:8px;padding:3px 10px;border-radius:20px;font-weight:700;">${getTotalLabel()}: ${fmtNum(b.valor)} ${mon}</span>${ivaLabel()}</div>
         </div>`:''}
       </div>`;
     }
@@ -728,7 +737,7 @@ function downloadPDF(){
       doc.setFont('helvetica','bold');doc.setFontSize(6);doc.setTextColor(224,200,255);
       doc.text(totalTxt,xStart+width-2,py+5,{align:'right'});
       doc.setFont('helvetica','normal');doc.setFontSize(5.5);doc.setTextColor(155,114,207);
-      doc.text('IVA no incluido',xStart+width-2,py+9,{align:'right'});
+      if(document.getElementById('mostrar_iva').checked){doc.text('IVA no incluido',xStart+width-2,py+9,{align:'right'});}
       return blockH;
     };
 

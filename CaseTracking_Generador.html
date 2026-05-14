@@ -317,6 +317,10 @@ select option{background:#1a1a1a;color:#fcd5b3;}
   <!-- CONDICIÓN Y MINUTA -->
   <div class="section-block">
     <div class="section-label">Condiciones particulares</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <label class="toggle"><input type="checkbox" id="mostrar_iva" checked onchange="update()"/><span class="toggle-slider"></span></label>
+      <span class="toggle-lbl" style="color:#fcd5b3;">Mostrar "IVA no incluido"</span>
+    </div>
     <div class="field-row full">
       <div class="field"><label>Detalle condición</label><input id="cond_det" placeholder="Describe la condición especial" oninput="update()"/></div>
     </div>
@@ -366,6 +370,11 @@ const STORAGE_KEY='casetracking_proposals';
 
 function v(id){return(document.getElementById(id)||{}).value||'';}
 function fmtDate(s){if(!s)return'';const d=new Date(s+'T00:00:00');if(isNaN(d))return s;return d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function ivaLabelCT(){
+  return document.getElementById('mostrar_iva')?.checked
+    ? '<div style="font-size:8px;color:#E8610A;margin-top:3px;text-align:right;">IVA no incluido</div>'
+    : '';
+}
 function getMultiplier(){
   const modal=v('cl_modal');
   if(modal==='Mensual') return 1;
@@ -457,7 +466,7 @@ function update(){
             </tr></tbody>
           </table>
           ${addonsHtml(o.addons,mon)}
-          <div style="text-align:right;margin-top:6px;">  <span class="prop-total-box" style="font-size:8px;padding:3px 10px;border-radius:20px;font-weight:700;">${getTotalLabel()}: ${(o.totalBase*getMultiplier()).toLocaleString('es-CL')} ${mon}</span><div style="font-size:8px;color:#E8610A;margin-top:3px;">IVA no incluido</div></div>
+          <div style="text-align:right;margin-top:6px;">  <span class="prop-total-box" style="font-size:8px;padding:3px 10px;border-radius:20px;font-weight:700;">${getTotalLabel()}: ${(o.totalBase*getMultiplier()).toLocaleString('es-CL')} ${mon}</span>${ivaLabelCT()}</div>
         </div>`;
       html+=`<div style="display:grid;grid-template-columns:${b?'1fr 1fr':'1fr'};gap:8px;margin-bottom:8px;">${renderOpt(a)}${b?renderOpt(b):''}</div>`;
     }
@@ -752,7 +761,7 @@ function downloadPDF(){
       doc.setFont('helvetica','bold');doc.setFontSize(6);doc.setTextColor(252,213,179);
       doc.text(totalTxt,xStart+width-2,py+5,{align:'right'});
       doc.setFont('helvetica','normal');doc.setFontSize(5.5);doc.setTextColor(232,97,10);
-      doc.text('IVA no incluido',xStart+width-2,py+9,{align:'right'});
+      if(document.getElementById('mostrar_iva').checked){doc.text('IVA no incluido',xStart+width-2,py+9,{align:'right'});}
       return blockH;
     };
 
