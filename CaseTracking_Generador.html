@@ -329,7 +329,8 @@ select option{background:#1a1a1a;color:#fcd5b3;}
     <div class="section-label">Minuta de reunión</div>
     <div class="field-row full">
       <div class="field"><label>Resumen de la reunión</label>
-        <textarea id="minuta" placeholder="Escribe aquí los puntos tratados en la reunión, acuerdos, próximos pasos..." oninput="update()"></textarea>
+        <textarea id="minuta" maxlength="2000" placeholder="Escribe aquí los puntos tratados en la reunión, acuerdos, próximos pasos..." oninput="update();document.getElementById('minuta_count').textContent=this.value.length"></textarea>
+        <span id="minuta_count" style="font-size:10px;color:#E8610A;text-align:right;display:block;margin-top:3px;">0 / 2.000 caracteres</span>
       </div>
     </div>
   </div>
@@ -456,7 +457,7 @@ function update(){
             </tr></tbody>
           </table>
           ${addonsHtml(o.addons,mon)}
-          <div style="text-align:right;margin-top:6px;">  <span class="prop-total-box" style="font-size:8px;padding:3px 10px;border-radius:20px;font-weight:700;">${getTotalLabel()}: ${(o.totalBase*getMultiplier()).toLocaleString('es-CL')} ${mon}</span></div>
+          <div style="text-align:right;margin-top:6px;">  <span class="prop-total-box" style="font-size:8px;padding:3px 10px;border-radius:20px;font-weight:700;">${getTotalLabel()}: ${(o.totalBase*getMultiplier()).toLocaleString('es-CL')} ${mon}</span><div style="font-size:8px;color:#E8610A;margin-top:3px;">IVA no incluido</div></div>
         </div>`;
       html+=`<div style="display:grid;grid-template-columns:${b?'1fr 1fr':'1fr'};gap:8px;margin-bottom:8px;">${renderOpt(a)}${b?renderOpt(b):''}</div>`;
     }
@@ -629,15 +630,21 @@ function downloadPDF(){
   doc.setTextColor(232,97,10);doc.text('www.lemontech.com',W-M,24,{align:'right'});
 
   // SUBHEADER naranja
-  doc.setFillColor(232,97,10);doc.rect(0,32,W,10,'F');
+  doc.setFillColor(232,97,10);doc.rect(0,32,W,11,'F');
   const metas=[['Account Manager',v('am_nombre')],['Correo',v('am_correo')],['Company ID',v('am_compid')],['Emisión',fmtDate(v('am_emision'))],['Vence',fmtDate(v('am_vencimiento'))]];
+  const metaColW=U/metas.length;
   metas.forEach(([lbl,val],i)=>{
-    const x=M+i*(U/metas.length);
-    doc.setFont('helvetica','bold');doc.setFontSize(6.5);doc.setTextColor(255,255,255);doc.text(lbl,x,36);
-    doc.setFont('helvetica','normal');doc.setTextColor(255,243,236);doc.text(val||'',x,40);
+    const x=M+i*metaColW;
+    const maxW=metaColW-3;
+    doc.setFont('helvetica','bold');doc.setFontSize(6);doc.setTextColor(255,255,255);doc.text(lbl,x,36);
+    doc.setFont('helvetica','normal');doc.setFontSize(6);doc.setTextColor(255,243,236);
+    let txt=val||'';
+    while(txt.length>1&&doc.getTextWidth(txt)>maxW) txt=txt.slice(0,-1);
+    if((val||'').length>txt.length) txt+='…';
+    doc.text(txt,x,40);
   });
 
-  let y=48;
+  let y=49;
   const secTitle=(txt)=>{
     doc.setDrawColor(232,97,10);doc.setLineWidth(0.8);doc.line(M,y,M,y+5);
     doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(232,97,10);doc.text(txt,M+4,y+4);y+=9;
@@ -663,74 +670,99 @@ function downloadPDF(){
   if(v('minuta')){
     secTitle('Minuta de reunión');
     const mlines=doc.splitTextToSize(v('minuta'),U-6);
-    const mh=Math.max(12,4+mlines.length*4.5);
-    doc.setFillColor(255,248,244);doc.setDrawColor(252,213,179);doc.setLineWidth(0.3);doc.rect(M,y,U,mh,'FD');
-    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(51,51,51);doc.text(mlines,M+3,y+5);
-    y+=mh+5;
+    const lineH=4.5;
+    const maxLinesPerPage=Math.floor((285-y-10)/lineH);
+    if(mlines.length>maxLinesPerPage){
+      const first=mlines.slice(0,maxLinesPerPage);
+      const mh1=4+first.length*lineH;
+      doc.setFillColor(255,248,244);doc.setDrawColor(252,213,179);doc.setLineWidth(0.3);doc.rect(M,y,U,mh1,'FD');
+      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(51,51,51);doc.text(first,M+3,y+5);
+      doc.addPage();y=15;
+      const second=mlines.slice(maxLinesPerPage);
+      const mh2=4+second.length*lineH;
+      doc.setFillColor(255,248,244);doc.setDrawColor(252,213,179);doc.setLineWidth(0.3);doc.rect(M,y,U,mh2,'FD');
+      doc.text(second,M+3,y+5);
+      y+=mh2+5;
+    } else {
+      const mh=Math.max(12,4+mlines.length*lineH);
+      doc.setFillColor(255,248,244);doc.setDrawColor(252,213,179);doc.setLineWidth(0.3);doc.rect(M,y,U,mh,'FD');
+      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(51,51,51);doc.text(mlines,M+3,y+5);
+      y+=mh+5;
+    }
   }
 
-  // COTIZACIONES en pares
+  const pageH=285;
+  const altLegalesCTTotal=4*11+9+22+(v('cond_det')?13:0)+(v('cond_vig')?13:0);
+
   secTitle('Cotizaciones');
-  const halfW=(U-4)/2;
-  const drawOptCT=(o,xStart,width,startY)=>{
-    const addonsH=o.addons.length?(7+o.addons.length*6):0;
-    const blockH=9+8+8+addonsH+10;
-    // 1. Fondo naranja bloque
-    doc.setFillColor(255,248,244);doc.setDrawColor(252,213,179);doc.setLineWidth(0.4);
-    doc.roundedRect(xStart,startY,width,blockH,2,2,'FD');
-    let py=startY+2;
-    // 2. Título
-    doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(232,97,10);
-    doc.text('PROPUESTA '+o.num+(o.cant?' — '+o.cant:''),xStart+3,py+4);py+=7;
-    // 3. Cabecera con fondo naranja oscuro
-    doc.setFillColor(248,190,140);doc.rect(xStart,py,width,6,'F');
-    doc.setFont('helvetica','bold');doc.setFontSize(6);doc.setTextColor(122,46,0);
-    doc.text('Cantidad',xStart+3,py+4.5);
-    doc.text('Valor mensual',xStart+width*0.38,py+4.5);
-    doc.text('Implementación',xStart+width*0.62,py+4.5);
-    doc.text('Vencimiento',xStart+width*0.82,py+4.5);
-    py+=6;
-    // 4. Fila datos con fondo blanco + línea separadora
-    doc.setFillColor(255,255,255);doc.rect(xStart,py,width,7,'F');
-    doc.setDrawColor(252,213,179);doc.setLineWidth(0.3);doc.line(xStart,py+7,xStart+width,py+7);
-    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(26,26,26);
-    doc.text(o.cant||'—',xStart+3,py+5);
-    doc.text(fmtM(o.valor)+' '+mon,xStart+width*0.38,py+5);
-    doc.text(o.impl||'—',xStart+width*0.62,py+5);
-    doc.text(fmtDate(o.venc),xStart+width*0.82,py+5);
-    py+=8;
-    // 5. Add-ons con fondo naranja suave
-    if(o.addons.length){
-      doc.setFillColor(255,236,220);doc.rect(xStart,py,width,addonsH,'F');
-      doc.setFont('helvetica','bold');doc.setFontSize(6);doc.setTextColor(232,97,10);
-      doc.text('Add-on',xStart+3,py+4);
-      doc.text('Cant.',xStart+width*0.52,py+4);
-      doc.text('Valor mensual',xStart+width*0.72,py+4);
-      py+=5;
-      o.addons.forEach(a=>{
-        doc.setDrawColor(252,213,179);doc.setLineWidth(0.2);doc.line(xStart,py,xStart+width,py);
-        doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(26,26,26);
-        doc.text(a.nom,xStart+3,py+4);
-        doc.text(a.cant||'1',xStart+width*0.52,py+4);
-        doc.setFont('helvetica','bold');doc.text(fmtM(a.val)+' '+mon,xStart+width-3,py+4,{align:'right'});
-        py+=6;
-      });
-    }
-    // 6. Total botón pequeño redondeado
-    const totalTxt=getTotalLabel()+': '+(o.totalBase*getMultiplier()).toLocaleString('es-CL')+' '+mon;
-    const totalW=doc.getTextWidth(totalTxt)+8;
-    doc.setFillColor(15,7,32);doc.roundedRect(xStart+width-totalW-2,py+2,totalW+2,6,3,3,'F');
-    doc.setFont('helvetica','bold');doc.setFontSize(6.5);doc.setTextColor(252,213,179);
-    doc.text(totalTxt,xStart+width-2,py+6.5,{align:'right'});
-    return blockH+3;
-  };
+  const halfWCT=(U-4)/2;
+
+  // SIEMPRE pares — saltar página por fila si no hay espacio
   for(let i=0;i<opts.length;i+=2){
-    const a=opts[i];const b=opts[i+1];
-    const hA=drawOptCT(a,M,b?halfW:U,y);
-    const hB=b?drawOptCT(b,M+halfW+4,halfW,y):0;
-    y+=Math.max(hA,hB)+2;
+    const a=opts[i]; const b=opts[i+1];
+
+    const calcBlockHCT=(o,width)=>{
+      const addonsH=o.addons.length?(5+o.addons.length*5):0;
+      return 7+6+7+addonsH+12;
+    };
+    const hA=calcBlockHCT(a,b?halfWCT:U);
+    const hB=b?calcBlockHCT(b,halfWCT):0;
+    const filaH=Math.max(hA,hB);
+
+    const esUltimaFila=(i+2>=opts.length);
+    const espacioNecesario=filaH+(esUltimaFila?altLegalesCTTotal+5:0);
+    if(y+espacioNecesario>pageH){ doc.addPage(); y=15; }
+
+    const rowY=y;
+
+    const drawParCT=(o,xStart,width)=>{
+      const addonsH=o.addons.length?(5+o.addons.length*5):0;
+      const blockH=7+6+7+addonsH+12;
+      doc.setFillColor(255,248,244);doc.setDrawColor(252,213,179);doc.setLineWidth(0.4);
+      doc.roundedRect(xStart,rowY,width,blockH,2,2,'FD');
+      let py=rowY+1;
+      doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(232,97,10);
+      doc.text('PROPUESTA '+o.num+(o.cant?' — '+o.cant:''),xStart+3,py+4);py+=6;
+      doc.setFillColor(248,190,140);doc.rect(xStart,py,width,5,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(5.5);doc.setTextColor(122,46,0);
+      doc.text('Cantidad',xStart+3,py+3.8);
+      doc.text('Valor mensual',xStart+width*0.38,py+3.8);
+      doc.text('Implementación',xStart+width*0.62,py+3.8);
+      py+=5;
+      doc.setFillColor(255,255,255);doc.rect(xStart,py,width,7,'F');
+      doc.setDrawColor(252,213,179);doc.setLineWidth(0.2);doc.line(xStart,py+7,xStart+width,py+7);
+      doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(26,26,26);
+      doc.text(o.cant||'—',xStart+3,py+5);
+      doc.text(fmtM(o.valor)+' '+mon,xStart+width*0.38,py+5);
+      doc.text(o.impl||'—',xStart+width*0.62,py+5);
+      py+=7;
+      if(o.addons.length){
+        doc.setFillColor(255,236,220);doc.rect(xStart,py,width,addonsH,'F');
+        doc.setFont('helvetica','bold');doc.setFontSize(5.5);doc.setTextColor(232,97,10);
+        doc.text('Add-on',xStart+3,py+3.5);doc.text('Cant.',xStart+width*0.55,py+3.5);doc.text('Valor',xStart+width*0.75,py+3.5);py+=4;
+        o.addons.forEach(a=>{
+          doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(26,26,26);
+          doc.text(a.nom,xStart+3,py+3);doc.text(a.cant||'1',xStart+width*0.55,py+3);
+          doc.setFont('helvetica','bold');doc.text(fmtM(a.val)+' '+mon,xStart+width-3,py+3,{align:'right'});py+=5;
+        });
+      }
+      const totalTxt=getTotalLabel()+': '+(o.totalBase*getMultiplier()).toLocaleString('es-CL')+' '+mon;
+      const totalW=doc.getTextWidth(totalTxt)+6;
+      doc.setFillColor(15,7,32);doc.roundedRect(xStart+width-totalW-2,py+1,totalW+2,5.5,2,2,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(6);doc.setTextColor(252,213,179);
+      doc.text(totalTxt,xStart+width-2,py+5,{align:'right'});
+      doc.setFont('helvetica','normal');doc.setFontSize(5.5);doc.setTextColor(232,97,10);
+      doc.text('IVA no incluido',xStart+width-2,py+9,{align:'right'});
+      return blockH;
+    };
+
+    const drawnA=drawParCT(a,M,b?halfWCT:U);
+    const drawnB=b?drawParCT(b,M+halfWCT+4,halfWCT):0;
+    y+=Math.max(drawnA,drawnB)+3;
   }
-  if(opts.length>1){doc.addPage();y=15;}
+
+  y+=2;
+
   if(v('cond_det')){
     secTitle('Condiciones particulares');
     doc.setFillColor(255,240,230);doc.setDrawColor(252,213,179);doc.setLineWidth(0.3);doc.roundedRect(M,y,U,10,1.5,1.5,'FD');
@@ -738,26 +770,41 @@ function downloadPDF(){
     doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(122,46,0);doc.text(v('cond_det'),M+4,y+6.5);y+=12;
     if(v('cond_vig')){
       doc.setFillColor(255,240,230);doc.roundedRect(M,y,U,10,1.5,1.5,'FD');
-      doc.setDrawColor(232,97,10);doc.setLineWidth(1.5);doc.line(M,y,M,y+10);
-      doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.text('Vigencia: '+v('cond_vig'),M+4,y+6.5);y+=14;
+      doc.setDrawColor(232,97,10);doc.line(M,y,M,y+10);
+      doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.text('Vigencia: '+v('cond_vig'),M+4,y+6.5);y+=12;
     }
   }
+
+  // TÉRMINOS Y CONDICIONES + FIRMA — siempre juntos, nunca separados
+  const altLegalesCTBloque=4*11+9+22; // 4 filas + título + firma
+  if(y+altLegalesCTBloque>pageH){ doc.addPage(); y=15; }
   secTitle('Términos y condiciones');
-  const legales=[['1.','Aceptación','La suscripción mediante firma implica la aceptación del servicio.'],['2.','Términos y condiciones','recursos.lemontech.com/hubfs/Archivos-legales/ACUERDO-MARCO-DE-SERVICIOS-DE-LEMONTECH.pdf'],['3.','Aviso de privacidad','recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf'],['4.','Encargo Tratamiento de datos','recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf']];
-  legales.forEach(([n,t,d],i)=>{
+  const legalesCT=[
+    ['1.','Aceptación','La suscripción mediante firma implica la aceptación del servicio.'],
+    ['2.','Términos y condiciones','recursos.lemontech.com/hubfs/Archivos-legales/ACUERDO-MARCO-DE-SERVICIOS-DE-LEMONTECH.pdf'],
+    ['3.','Aviso de privacidad','recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf'],
+    ['4.','Encargo Tratamiento de datos','recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf']
+  ];
+  legalesCT.forEach(([n,t,d],i)=>{
     doc.setFillColor(i%2===0?255:255,i%2===0?248:252,i%2===0?244:246);doc.rect(M,y,U,10,'F');
     doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(232,97,10);doc.text(n,M+2,y+4.5);
     doc.setTextColor(26,26,26);doc.text(t,M+10,y+4.5);
     doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(107,114,128);doc.text(d,M+10,y+8.5);y+=11;
   });
-  if(y+25>285)doc.addPage();
-  y+=8;
-  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(232,97,10);doc.text('Lemontech SpA · Tax ID 99.511.620-0',M,y);
+
+  // FIRMA — en la misma página que legales (ya garantizado arriba)
+  y+=5;
+  doc.setDrawColor(252,213,179);doc.setLineWidth(0.4);doc.line(M,y,W-M,y);y+=5;
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(232,97,10);
+  doc.text('Lemontech SpA · Tax ID 99.511.620-0',M,y+3);
   const fw=80;const fx=W-M-fw;
   doc.setDrawColor(122,46,0);doc.setLineWidth(1);doc.line(fx,y+12,W-M,y+12);
-  doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(122,46,0);doc.text('Firma y nombre del representante',fx+(fw/2),y+17,{align:'center'});
+  doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(122,46,0);
+  doc.text('Firma y nombre del representante',fx+(fw/2),y+17,{align:'center'});
+
   doc.save((v('cl_empresa')||'Cliente')+' - CaseTracking.pdf');
 }
+
 update();
 </script>
 </body>
