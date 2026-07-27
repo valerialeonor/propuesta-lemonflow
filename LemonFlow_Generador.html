@@ -481,6 +481,7 @@ function update(){
       <div class="prop-legal-row"><div class="prop-legal-num">1.</div><div><div class="prop-legal-ttl">Aceptación de la propuesta</div><div class="prop-legal-desc">La suscripción mediante firma implica la aceptación del servicio y de los Términos y Condiciones.</div></div></div>
       <div class="prop-legal-row"><div class="prop-legal-num">2.</div><div><div class="prop-legal-ttl">Términos y condiciones</div><div class="prop-legal-desc"><a href="https://recursos.lemontech.com/hubfs/Archivos-legales/ACUERDO-MARCO-DE-SERVICIOS-DE-LEMONTECH.pdf" target="_blank">recursos.lemontech.com/hubfs/Archivos-legales/ACUERDO-MARCO-DE-SERVICIOS-DE-LEMONTECH.pdf</a></div></div></div>
       <div class="prop-legal-row"><div class="prop-legal-num">3.</div><div><div class="prop-legal-ttl">Aviso de privacidad</div><div class="prop-legal-desc"><a href="https://recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf" target="_blank">recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf</a></div></div></div>
+      <div class="prop-legal-row"><div class="prop-legal-num">4.</div><div><div class="prop-legal-ttl">Encargo Tratamiento de datos</div><div class="prop-legal-desc"><a href="https://recursos.lemontech.com/hubfs/Legales-Lemontech/CT%20-%20Contrato%20Encargo%20Tratamiento%20.pdf" target="_blank">recursos.lemontech.com/hubfs/Legales-Lemontech/CT - Contrato Encargo Tratamiento.pdf</a></div></div></div>
     </div>
   </div>
   <div class="prop-footer">
@@ -664,7 +665,7 @@ function downloadPDF(){
 
 
   const pageH=285;
-  const altLegalesTotal=3*11+9+22+(v('cond_det')?13:0); // espacio reservado para condiciones+firma
+  const altLegalesTotal=4*11+9+22+(v('cond_det')?13:0); // espacio reservado para condiciones+firma
 
   secTitle('Cotizaciones');
   const halfW=(U-4)/2;
@@ -758,19 +759,21 @@ function downloadPDF(){
   }
 
   // CONDICIONES LEGALES + FIRMA — siempre juntas, nunca separadas
-  const altLegalesBloque=3*11+9+22; // 3 filas + título + firma
+  const altLegalesBloque=4*11+9+22; // 4 filas + título + firma
   if(y+altLegalesBloque>pageH){ doc.addPage(); y=15; }
   secTitle('Condiciones legales');
   const legales=[
     ['1.','Aceptación de la propuesta','La suscripción mediante firma implica la aceptación del servicio.'],
     ['2.','Términos y condiciones','recursos.lemontech.com/hubfs/Archivos-legales/ACUERDO-MARCO-DE-SERVICIOS-DE-LEMONTECH.pdf'],
-    ['3.','Aviso de privacidad','recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf']
+    ['3.','Aviso de privacidad','recursos.lemontech.com/hubfs/Archivos-legales/AVISO-DE-PRIVACIDAD-LEMONTECH-Clientes.pdf'],
+    ['4.','Encargo Tratamiento de datos','recursos.lemontech.com/hubfs/Legales-Lemontech/CT - Contrato Encargo Tratamiento.pdf','https://recursos.lemontech.com/hubfs/Legales-Lemontech/CT%20-%20Contrato%20Encargo%20Tratamiento%20.pdf']
   ];
-  legales.forEach(([n,t,d],i)=>{
+  legales.forEach(([n,t,d,url],i)=>{
     doc.setFillColor(i%2===0?248:255,i%2===0?245:255,255);doc.rect(M,y,U,10,'F');
     doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(107,33,200);doc.text(n,M+3,y+4.5);
     doc.setTextColor(26,10,46);doc.text(t,M+11,y+4.5);
     doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(107,114,128);doc.text(d,M+11,y+8.5);
+    if(url){const tw=doc.getTextWidth(d);doc.link(M+11,y+5.5,tw,4,{url});}
     y+=11;
   });
 
